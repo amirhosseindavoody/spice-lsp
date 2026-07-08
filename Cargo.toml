@@ -1,0 +1,16 @@
+[workspace]
+members = ["crates/spice-parser", "crates/spice-lsp", "tree-sitter-spice"]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+authors = ["Amirhossein Davoody <amirhossein.davoody@gmail.com>"]
+
+[workspace.dependencies]
+tree-sitter = "0.24"
+tree-sitter-spice = { path = "tree-sitter-spice" }
+tower-lsp = "0.20"
+tokio = { version = "1", features = ["full"] }
+url = "2"

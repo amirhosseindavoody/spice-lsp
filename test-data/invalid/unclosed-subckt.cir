@@ -1,0 +1,3 @@
+.subckt missing_end in out
+R1 in out 1k
+.end

@@ -1,0 +1,46 @@
+[
+  {
+    "type": "source_file",
+    "named": true,
+    "root": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "comment_line",
+          "named": true
+        },
+        {
+          "type": "continuation_line",
+          "named": true
+        },
+        {
+          "type": "dot_directive_line",
+          "named": true
+        },
+        {
+          "type": "instance_line",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "comment_line",
+    "named": true
+  },
+  {
+    "type": "continuation_line",
+    "named": true
+  },
+  {
+    "type": "dot_directive_line",
+    "named": true
+  },
+  {
+    "type": "instance_line",
+    "named": true
+  }
+]

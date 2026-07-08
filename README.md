@@ -2,7 +2,7 @@
 
 Language server and formatter for [SPICE](https://en.wikipedia.org/wiki/SPICE) circuit simulation netlists.
 
-**Current status:** early scaffolding. The Rust toolchain and [pixi](https://pixi.sh) build environment are in place; the LSP crate, parser, and VS Code extension are not implemented yet. The documentation describes the target architecture and a concrete path to a demoable MVP.
+**Current status:** MVP foundation — Rust workspace with Tree-sitter grammar, `spice-parser` diagnostics, and `spice-lsp` stdio language server. VS Code extension not yet implemented.
 
 ## End goal
 
