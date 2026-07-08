@@ -9,6 +9,7 @@ src = "."
 default-theme = "rust"
 preferred-dark-theme = "ayu"
 git-repository-url = "https://github.com/amirhosseindavoody/spice-lsp"
+site-url = "/spice-lsp/"
 
 [output.html.playground]
 copyable = true

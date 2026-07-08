@@ -17,7 +17,7 @@ Add dependencies with the CLI (do not hand-edit versions):
 ```bash
 pixi add rust=1.96
 pixi add nodejs=22       # when VS Code extension work starts
-pixi add mdbook          # for documentation site
+pixi add mdbook          # already in pixi.toml
 pixi add --pypi pytest   # example PyPI package
 ```
 
@@ -109,18 +109,32 @@ Cross-compile with `cross` or platform matrix in CI. Attach binaries to GitHub R
 
 ## Documentation site
 
-Build the mdBook site:
+## Documentation site
+
+Build locally:
 
 ```bash
-pixi run mdbook build docs
+pixi run mdbook-build
 # output: docs/book/
 ```
 
-Serve locally during doc edits:
+Preview:
 
 ```bash
-pixi run mdbook serve docs
+pixi run mdbook-serve
 ```
+
+### CI and GitHub Pages
+
+The [Deploy docs](../../.github/workflows/deploy-docs.yml) workflow runs on pushes to `main` when `docs/`, `pixi.toml`, or `pixi.lock` change. It:
+
+1. Runs `pixi run mdbook-build`
+2. Pushes the output to the `gh-pages` branch
+3. Configures GitHub Pages (source: `gh-pages` / root) and sets the repository **Website** field
+
+Published URL: **https://amirhosseindavoody.github.io/spice-lsp/**
+
+Trigger a manual deploy from the Actions tab via **workflow_dispatch** if needed.
 
 ## Troubleshooting
 

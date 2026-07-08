@@ -1,0 +1,64 @@
+name: Deploy docs
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "docs/**"
+      - "pixi.toml"
+      - "pixi.lock"
+      - ".github/workflows/deploy-docs.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pages: write
+  administration: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up pixi
+        uses: prefix-dev/setup-pixi@v0.8.9
+        with:
+          pixi-version: latest
+
+      - name: Build mdBook site
+        run: pixi run mdbook-build
+
+      - name: Deploy to gh-pages branch
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs/book
+          publish_branch: gh-pages
+          force_orphan: true
+
+      - name: Configure GitHub Pages and repository website
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          pages_url="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/"
+
+          if ! gh api "/repos/${{ github.repository }}/pages" >/dev/null 2>&1; then
+            gh api -X POST "/repos/${{ github.repository }}/pages" \
+              -f build_type=legacy \
+              -f source[branch]=gh-pages \
+              -f source[path]=/
+          else
+            gh api -X PUT "/repos/${{ github.repository }}/pages" \
+              -f build_type=legacy \
+              -f source[branch]=gh-pages \
+              -f source[path]=/
+          fi
+
+          gh repo edit "${{ github.repository }}" --homepage "$pages_url"
