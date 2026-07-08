@@ -1,0 +1,157 @@
+name: Release VS Code extension
+
+on:
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish to VS Code Marketplace (requires VSCE_PAT secret)
+        type: boolean
+        default: false
+  push:
+    tags:
+      - "vscode-v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-binary:
+    name: Build ${{ matrix.platform }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux-x64
+            target: x86_64-unknown-linux-gnu
+            binary: spice-lsp
+          - os: ubuntu-latest
+            platform: linux-arm64
+            target: aarch64-unknown-linux-gnu
+            binary: spice-lsp
+          - os: macos-latest
+            platform: darwin-arm64
+            target: aarch64-apple-darwin
+            binary: spice-lsp
+          - os: macos-latest
+            platform: darwin-x64
+            target: x86_64-apple-darwin
+            binary: spice-lsp
+          - os: windows-latest
+            platform: win32-x64
+            target: x86_64-pc-windows-msvc
+            binary: spice-lsp.exe
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Linux cross toolchain
+        if: matrix.platform == 'linux-arm64'
+        run: sudo apt-get update && sudo apt-get install -y gcc-aarch64-linux-gnu
+
+      - name: Set up pixi
+        uses: prefix-dev/setup-pixi@v0.8.9
+        with:
+          pixi-version: latest
+
+      - name: Add Rust target
+        run: rustup target add "${{ matrix.target }}"
+
+      - name: Configure cross linker
+        if: matrix.platform == 'linux-arm64'
+        run: |
+          mkdir -p .cargo
+          cat >> .cargo/config.toml <<'EOF'
+          [target.aarch64-unknown-linux-gnu]
+          linker = "aarch64-linux-gnu-gcc"
+          EOF
+
+      - name: Build release binary
+        run: cargo build --release -p spice-lsp --target "${{ matrix.target }}"
+
+      - name: Stage platform binary
+        shell: bash
+        run: |
+          mkdir -p dist
+          src="target/${{ matrix.target }}/release/${{ matrix.binary }}"
+          if [[ "${{ matrix.binary }}" == *.exe ]]; then
+            cp "$src" "dist/spice-lsp-${{ matrix.platform }}.exe"
+          else
+            cp "$src" "dist/spice-lsp-${{ matrix.platform }}"
+          fi
+
+      - name: Upload platform binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: spice-lsp-${{ matrix.platform }}
+          path: dist/spice-lsp-${{ matrix.platform }}*
+          if-no-files-found: error
+
+  package:
+    name: Package VSIX
+    needs: build-binary
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up pixi
+        uses: prefix-dev/setup-pixi@v0.8.9
+        with:
+          pixi-version: latest
+
+      - name: Download all platform binaries
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          pattern: spice-lsp-*
+          merge-multiple: true
+
+      - name: Package extension
+        run: |
+          chmod +x scripts/package-vscode-extension.sh
+          ./scripts/package-vscode-extension.sh --from-artifacts artifacts
+
+      - name: Upload VSIX artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: spice-lsp-vscode-vsix
+          path: editors/vscode/*.vsix
+          if-no-files-found: error
+
+      - name: Attach VSIX to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/vscode-v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: editors/vscode/*.vsix
+          generate_release_notes: true
+
+  publish:
+    name: Publish to Marketplace
+    needs: package
+    if: >-
+      (github.event_name == 'workflow_dispatch' && inputs.publish) ||
+      startsWith(github.ref, 'refs/tags/vscode-v')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download VSIX
+        uses: actions/download-artifact@v4
+        with:
+          name: spice-lsp-vscode-vsix
+          path: vsix
+
+      - name: Publish extension
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+        run: |
+          if [[ -z "$VSCE_PAT" ]]; then
+            echo "VSCE_PAT secret is not configured; skipping Marketplace publish." >&2
+            exit 1
+          fi
+          npm install -g @vscode/vsce
+          vsce publish --no-dependencies --packagePath "$(ls vsix/*.vsix | head -1)"

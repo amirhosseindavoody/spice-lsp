@@ -1,31 +1,36 @@
 # SPICE Language Support
 
-VS Code extension for [spice-lsp](https://github.com/amirhosseindavoody/spice-lsp).
+Language support for [SPICE](https://en.wikipedia.org/wiki/SPICE) circuit simulation netlists, powered by the [spice-lsp](https://github.com/amirhosseindavoody/spice-lsp) language server.
 
-## Development
+## Features
 
-1. Build the language server from the repo root:
+- **Syntax diagnostics** — unclosed `.subckt` blocks, parse errors, and related issues
+- **Semantic warnings** — duplicate component names, undefined model/subcircuit references
+- **Document outline** — hierarchical view of subcircuits, models, parameters, and instances
+- **Go to definition** — jump from subcircuit references to `.subckt` definitions
+- **Find references** — list all usages of a subcircuit, model, or parameter
 
-   ```bash
-   pixi run build-dev
-   ```
+Supported file extensions: `.cir`, `.sp`, `.net`, `.ckt`.
 
-2. Install and compile the extension:
+## Getting started
 
-   ```bash
-   npm install
-   npm run compile
-   ```
+Install the extension from the Marketplace — no extra setup is required. The matching `spice-lsp` binary for your platform (Linux, macOS, or Windows on x64/arm64) is bundled automatically.
 
-3. Press **F5** to open the Extension Development Host.
-
-4. Open a `.cir` file such as `test-data/invalid/unclosed-subckt.cir`.
+Open a netlist file and diagnostics, outline, and navigation features activate when the file is recognized as SPICE.
 
 ## Settings
 
 | Setting | Description |
 |---------|-------------|
-| `spiceLsp.serverPath` | Path to the `spice-lsp` binary |
-| `spiceLsp.trace.server` | `off`, `messages`, or `verbose` |
+| `spiceLsp.serverPath` | Override the bundled language-server binary with a custom path |
+| `spiceLsp.trace.server` | Trace LSP communication: `off`, `messages`, or `verbose` |
 
-If `serverPath` is empty, the extension tries `../../target/debug/spice-lsp` relative to the compiled extension (works when launched from this repo).
+Use **SPICE LSP: Restart Server** from the Command Palette after changing `serverPath`.
+
+## Documentation
+
+Project docs: [spice-lsp book](https://amirhosseindavoody.github.io/spice-lsp/)
+
+## License
+
+MIT — see the [repository](https://github.com/amirhosseindavoody/spice-lsp) for details.

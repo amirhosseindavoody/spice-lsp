@@ -39,7 +39,7 @@ Add these to `[tasks]` in `pixi.toml` as the workspace grows:
 | `mdbook-serve` | `mdbook serve docs -n 127.0.0.1 -p 3000` | Live doc preview |
 | `ext-install` | `npm install` in `editors/vscode` | Extension deps |
 | `ext-compile` | `npm run compile` | Build extension TS |
-| `ext-package` | `vsce package` | `.vsix` for side-loading |
+| `ext-package` | `./scripts/package-vscode-extension.sh` | Bundle local binary + `.vsix` |
 
 Example `pixi.toml` fragment:
 
