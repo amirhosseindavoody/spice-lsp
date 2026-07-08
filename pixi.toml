@@ -1,0 +1,11 @@
+[workspace]
+authors = ["Amirhossein Davoody <amirhossein.davoody@gmail.com>"]
+channels = ["conda-forge"]
+name = "spice-lsp"
+platforms = ["linux-64"]
+version = "0.1.0"
+
+[tasks]
+
+[dependencies]
+rust = ">=1.96.1,<1.97"

@@ -1,0 +1,52 @@
+---
+description: Keep README.md and docs/ aligned with code behavior
+alwaysApply: true
+---
+
+# Keep documentation in sync with code
+
+When you change **user-visible behavior**, **CLI/TUI contracts**, **data loading**, **pixi tasks**, or **project layout**, update documentation in the **same change** (do not defer).
+
+## Doc tree
+
+**Hub:** [docs/index.md](../docs/index.md)
+
+| Area | Update when you change… |
+|------|-------------------------|
+| [docs/principles.md](../docs/principles.md) | Goals, non-goals, UX values |
+| [docs/architecture.md](../docs/architecture.md) | Crates, module map, shared model |
+| [docs/getting-started.md](../docs/getting-started.md) | Binaries, entry points, setup |
+| [docs/features/cli.md](../docs/features/cli.md) | CLI commands, filter syntax |
+| [docs/features/tui.md](../docs/features/tui.md) | TUI layout, keys, mouse (`csv-utils/src/tui/app.rs`) |
+| [docs/features/web.md](../docs/features/web.md) | Web UI, API, theme |
+| [docs/reference/data-loading.md](../docs/reference/data-loading.md) | Preview APIs, threading |
+| [docs/reference/csv-parsing.md](../docs/reference/csv-parsing.md) | `split_row`, column types, cells |
+| [docs/reference/limitations.md](../docs/reference/limitations.md) | Known constraints |
+| [docs/development/build.md](../docs/development/build.md) | Pixi tasks, conda recipe |
+| [docs/test-data-generation.md](../docs/test-data-generation.md) | `scripts/generate_test_data.py` |
+| [README.md](../README.md) | Quick start, task examples |
+
+[docs/DESIGN.md](../docs/DESIGN.md) is a redirect stub only; edit the targeted doc above.
+
+## When to update
+
+Update docs if you touch any of:
+
+- `csv-utils/src/**`, `csv-utils-core/src/**`
+- `Cargo.toml`, `pixi.toml`, `recipe/recipe.yaml`
+- `scripts/generate_test_data.py`, `scripts/capture_tui_snapshot.py`
+
+Skip doc updates only for pure refactors with **no** behavior, CLI, TUI, or task-name changes.
+
+## Checklist before finishing
+
+- [ ] Relevant doc(s) describe behavior **after** your change
+- [ ] [README.md](../README.md) examples still run as written
+- [ ] No stale references (removed tasks, wrong paths)
+- [ ] TUI keyboard/mouse tables match `csv-utils/src/tui/app.rs`
+
+## Style
+
+- Factual, present tense; tables for bindings and flags
+- Prefer editing the section doc over duplicating content in multiple files
+- Bump “Last verified against” in [docs/index.md](../docs/index.md) when materially refreshing docs

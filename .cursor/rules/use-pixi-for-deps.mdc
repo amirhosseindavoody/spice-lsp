@@ -1,0 +1,43 @@
+---
+description: Manage dependencies and build environment with pixi CLI
+alwaysApply: true
+---
+
+# Use pixi for dependencies and build environment
+
+This project manages **all dependencies** and the **build environment** with [pixi](https://pixi.sh). Do not install tools or libraries outside pixi (e.g. system `apt`, global `cargo install`, or ad-hoc `pip install`).
+
+## Do not hand-edit `pixi.toml` for dependencies
+
+When adding, removing, or changing dependency versions, use the **pixi CLI**. Let pixi update `pixi.toml` and the lockfile.
+
+| Goal | Command |
+|------|---------|
+| Add conda dependency | `pixi add <package>` or `pixi add <package>=<version>` |
+| Add PyPI dependency | `pixi add --pypi <package>` |
+| Remove dependency | `pixi remove <package>` or `pixi remove --pypi <package>` |
+| Install / sync env | `pixi install` |
+| Run a pixi task | `pixi run <task>` |
+| Run a one-off command in env | `pixi run <command>` |
+
+Examples:
+
+```bash
+pixi add python=3.12
+pixi add --pypi pytest
+pixi remove rust
+pixi run cargo build
+```
+
+## When editing `pixi.toml` directly is OK
+
+- Adding or renaming **pixi tasks** under `[tasks]` (no equivalent `pixi task add` workflow required)
+- Workspace metadata (name, channels, platforms) when the user explicitly asks for a manifest-only change
+
+For **dependencies**, always prefer `pixi add` / `pixi remove` even if you know the exact spec.
+
+## Agent workflow
+
+1. Use `pixi run …` for builds, tests, and scripts that need project tools.
+2. If a dependency is missing, run `pixi add` (or `pixi add --pypi`) instead of editing `[dependencies]` or `pypi-dependencies` by hand.
+3. After dependency changes, run `pixi install` if needed and verify with the relevant `pixi run` task or command.
