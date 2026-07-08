@@ -18,7 +18,6 @@ concurrency:
 permissions:
   contents: write
   pages: write
-  administration: write
 
 jobs:
   deploy:
@@ -43,12 +42,10 @@ jobs:
           publish_branch: gh-pages
           force_orphan: true
 
-      - name: Configure GitHub Pages and repository website
+      - name: Configure GitHub Pages (gh-pages branch)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          pages_url="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/"
-
           if ! gh api "/repos/${{ github.repository }}/pages" >/dev/null 2>&1; then
             gh api -X POST "/repos/${{ github.repository }}/pages" \
               -f build_type=legacy \
@@ -61,4 +58,11 @@ jobs:
               -f source[path]=/
           fi
 
-          gh repo edit "${{ github.repository }}" --homepage "$pages_url"
+      - name: Set repository website field
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          pages_url="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/"
+          gh api -X PATCH "/repos/${{ github.repository }}" \
+            -f homepage="$pages_url"
