@@ -130,7 +130,17 @@ The [Deploy docs](../../.github/workflows/deploy-docs.yml) workflow runs on push
 
 1. Runs `pixi run mdbook-build`
 2. Pushes the output to the `gh-pages` branch
-3. Configures GitHub Pages (source: `gh-pages` / root) and sets the repository **Website** field
+
+`GITHUB_TOKEN` cannot enable GitHub Pages or set the repository **Website** field on this repo (API returns 403). Run the one-time setup script locally as a repository admin after the first successful deploy:
+
+```bash
+./scripts/setup-github-pages.sh
+```
+
+That script uses the `gh` CLI to:
+
+- Point Pages at the `gh-pages` branch (`/` root)
+- Set the repository **Website** field to the published URL
 
 Published URL: **https://amirhosseindavoody.github.io/spice-lsp/**
 
