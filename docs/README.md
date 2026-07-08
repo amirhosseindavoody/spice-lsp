@@ -1,21 +1,38 @@
 # Introduction
 
-**Last verified against:** initial scaffolding (no LSP crate yet)
+**Last verified against:** documentation expansion (pre-MVP scaffolding — no LSP crate yet)
 
-spice-lsp is a language server and formatter for SPICE circuit simulation netlists. This book is generated with [mdBook](https://rust-lang.github.io/mdBook/) from the `docs/` directory.
+spice-lsp is a language server and formatter for SPICE circuit simulation netlists. The **end goal** is a VS Code extension that provides real-time diagnostics, navigation, and formatting while editing `.cir`, `.sp`, and related netlist files.
 
-Quick setup (pixi, clone, build) lives in the repository [README.md](../README.md).
+This book is generated with [mdBook](https://rust-lang.github.io/mdBook/) from the `docs/` directory.
 
-## Planned chapters
+## Where to start
 
-These numbered pages will be added to [SUMMARY.md](SUMMARY.md) as they are written:
+| If you want to… | Read |
+|-----------------|------|
+| Set up the repo and run builds | [Getting Started](2_getting-started.md) |
+| Understand MVP scope and ship a demo fast | [MVP Guide](development/2_mvp.md) |
+| Demo or test manually and in CI | [Demo and Testing](development/3_demo-and-test.md) |
+| Wire up VS Code | [VS Code Integration](development/4_vscode-integration.md) |
+| Understand crate layout and phases | [Architecture](4_architecture.md) |
 
-| File | Topic |
-|------|-------|
-| `2_getting-started.md` | Setup, pixi workflow, editor integration |
-| `3_principles.md` | Goals, non-goals, UX values |
-| `4_architecture.md` | Crates, parser/LSP/formatter pipeline |
-| `5_lsp-features.md` | LSP methods, diagnostics, navigation |
-| `6_formatter.md` | Formatting rules and options |
-| `7_limitations.md` | Known constraints |
-| `development/1_build.md` | Pixi tasks, CI, release builds |
+Quick setup (pixi, clone, build) also lives in the repository [README.md](../README.md).
+
+## Roadmap at a glance
+
+```
+MVP          → syntax diagnostics in VS Code
+v0.2         → outline, go to definition, references
+v0.3         → completion, hover, snippets
+v0.4         → formatter, dialect settings
+```
+
+## Build the book locally
+
+Once `mdbook` is added to the pixi environment:
+
+```bash
+pixi run mdbook serve docs
+```
+
+Open the URL printed in the terminal (default `http://localhost:3000`).
