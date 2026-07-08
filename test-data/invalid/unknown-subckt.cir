@@ -1,0 +1,3 @@
+* Unknown subcircuit reference
+X1 a b missingbuf
+.end

@@ -9,7 +9,7 @@ LSP methods spice-lsp implements or plans to implement, organized by release pha
 | `initialize` / `initialized` | ✓ | | | | |
 | `shutdown` / `exit` | ✓ | | | | |
 | `textDocument/didOpen` / `didChange` / `didClose` | ✓ | | | | |
-| `textDocument/publishDiagnostics` | ✓ | | | | syntax |
+| `textDocument/publishDiagnostics` | ✓ | ✓ | | | syntax |
 | Syntax diagnostics | ✓ | | | | |
 | Duplicate / undefined symbol diagnostics | | ✓ | | | |
 | Dangling node / floating net diagnostics | | | | | ✓ |
@@ -53,6 +53,21 @@ Diagnostics arrive via server-initiated `textDocument/publishDiagnostics`.
 | Missing CST child | `expected node list` | Error |
 
 ## v0.2 — Symbols and light semantics
+
+### Server capabilities
+
+Adds outline and navigation on top of MVP sync:
+
+```json
+{
+  "capabilities": {
+    "textDocumentSync": { "openClose": true, "change": 2 },
+    "documentSymbolProvider": true,
+    "definitionProvider": true,
+    "referencesProvider": true
+  }
+}
+```
 
 **Document symbols** for outline / breadcrumbs:
 
@@ -122,6 +137,14 @@ Each phase adds integration tests for newly advertised capabilities. MVP priorit
 1. `initialize` returns expected capabilities
 2. Open invalid document → diagnostics notification
 3. Edit → updated diagnostics
-4. (v0.5) Open semantic fixture → dangling / floating warnings; hover snapshot matches reference entry
+
+v0.2 adds:
+
+4. `documentSymbol` returns hierarchical outline for `.subckt` blocks
+5. `definition` on subcircuit reference jumps to `.subckt` definition
+6. `references` on subcircuit definition lists definition + usages
+7. Semantic fixtures (`duplicate-instance.cir`, `unknown-subckt.cir`) produce warning codes
+
+8. (v0.5) Open semantic fixture → dangling / floating warnings; hover snapshot matches reference entry
 
 See [Demo and testing](development/3_demo-and-test.md).

@@ -1,19 +1,23 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use spice_parser::analyze;
+use spice_parser::{analyze, Index};
 use tokio::sync::RwLock;
 use tower_lsp::jsonrpc::Result;
 use tower_lsp::lsp_types::*;
 use tower_lsp::{Client, LanguageServer};
 use url::Url;
 
-use crate::convert::to_lsp_diagnostic;
+use crate::convert::{
+    definition_location, position_to_byte_offset, reference_locations, to_document_symbols,
+    to_lsp_diagnostic,
+};
 
 #[derive(Debug, Clone)]
 struct Document {
     text: String,
     version: i32,
+    index: Index,
 }
 
 pub struct Backend {
@@ -29,14 +33,24 @@ impl Backend {
         }
     }
 
-    async fn publish_diagnostics(&self, uri: Url, text: &str) {
+    async fn analyze_and_store(&self, uri: &Url, text: &str) -> (Vec<Diagnostic>, Index) {
         let result = analyze(text);
         let diagnostics = result
             .diagnostics
             .into_iter()
             .map(|d| to_lsp_diagnostic(text, d))
             .collect::<Vec<_>>();
+        let index = result.index;
 
+        if let Some(doc) = self.documents.write().await.get_mut(uri) {
+            doc.index = index.clone();
+        }
+
+        (diagnostics, index)
+    }
+
+    async fn publish_diagnostics(&self, uri: Url, text: &str) {
+        let (diagnostics, _) = self.analyze_and_store(&uri, text).await;
         self.client
             .publish_diagnostics(uri, diagnostics, None)
             .await;
@@ -72,6 +86,9 @@ impl LanguageServer for Backend {
                         ..Default::default()
                     },
                 )),
+                document_symbol_provider: Some(OneOf::Left(true)),
+                definition_provider: Some(OneOf::Left(true)),
+                references_provider: Some(OneOf::Left(true)),
                 ..Default::default()
             },
             server_info: Some(ServerInfo {
@@ -99,6 +116,7 @@ impl LanguageServer for Backend {
                 Document {
                     text: text.clone(),
                     version,
+                    index: Index::default(),
                 },
             );
         }
@@ -135,40 +153,59 @@ impl LanguageServer for Backend {
         let uri = params.text_document.uri;
         self.documents.write().await.remove(&uri);
     }
-}
 
-fn position_to_byte_offset(source: &str, position: Position) -> usize {
-    let mut line = 0u32;
-    let mut byte = 0usize;
+    async fn document_symbol(
+        &self,
+        params: DocumentSymbolParams,
+    ) -> Result<Option<DocumentSymbolResponse>> {
+        let docs = self.documents.read().await;
+        let Some(doc) = docs.get(&params.text_document.uri) else {
+            return Ok(None);
+        };
 
-    for ch in source.chars() {
-        if line == position.line {
-            break;
-        }
-        byte += ch.len_utf8();
-        if ch == '\n' {
-            line += 1;
-        }
+        let symbols = to_document_symbols(&doc.text, &doc.index.document_symbols);
+        Ok(Some(DocumentSymbolResponse::Nested(symbols)))
     }
 
-    if line < position.line {
-        return source.len();
+    async fn goto_definition(
+        &self,
+        params: GotoDefinitionParams,
+    ) -> Result<Option<GotoDefinitionResponse>> {
+        let docs = self.documents.read().await;
+        let Some(doc) = docs.get(&params.text_document_position_params.text_document.uri) else {
+            return Ok(None);
+        };
+
+        let offset = position_to_byte_offset(
+            &doc.text,
+            params.text_document_position_params.position,
+        );
+        let location = definition_location(
+            &params.text_document_position_params.text_document.uri,
+            &doc.text,
+            &doc.index,
+            offset,
+        );
+
+        Ok(location.map(GotoDefinitionResponse::Scalar))
     }
 
-    let line_start = byte;
-    let mut col = 0u32;
-    for ch in source[line_start..].chars() {
-        if ch == '\n' {
-            break;
-        }
-        if col == position.character {
-            break;
-        }
-        byte += ch.len_utf8();
-        col += ch.len_utf16() as u32;
-    }
+    async fn references(&self, params: ReferenceParams) -> Result<Option<Vec<Location>>> {
+        let docs = self.documents.read().await;
+        let Some(doc) = docs.get(&params.text_document_position.text_document.uri) else {
+            return Ok(None);
+        };
 
-    byte.min(source.len())
+        let offset = position_to_byte_offset(&doc.text, params.text_document_position.position);
+        let locations = reference_locations(
+            &params.text_document_position.text_document.uri,
+            &doc.text,
+            &doc.index,
+            offset,
+        );
+
+        Ok(Some(locations))
+    }
 }
 
 #[cfg(test)]

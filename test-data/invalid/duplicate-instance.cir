@@ -1,0 +1,4 @@
+* Duplicate instance names in the same scope
+R1 a b 1k
+R1 c d 2k
+.end

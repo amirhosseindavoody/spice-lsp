@@ -144,6 +144,182 @@ async fn initialize_advertises_incremental_sync() {
 }
 
 #[tokio::test]
+async fn initialize_advertises_navigation_capabilities() {
+    let mut server = LspProcess::spawn().await;
+    server
+        .send(json!({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "initialize",
+            "params": { "processId": null, "rootUri": null, "capabilities": {} }
+        }))
+        .await;
+    let response = server.read_response(1).await;
+    let caps = &response["result"]["capabilities"];
+    assert_eq!(caps["documentSymbolProvider"], true);
+    assert_eq!(caps["definitionProvider"], true);
+    assert_eq!(caps["referencesProvider"], true);
+    server.shutdown().await;
+}
+
+#[tokio::test]
+async fn document_symbol_returns_subckt_outline() {
+    let uri = "file:///test/subckt.cir";
+    let source = fixture("valid/subckt.cir");
+
+    let mut server = LspProcess::spawn().await;
+    handshake(&mut server).await;
+    server
+        .send(json!({
+            "jsonrpc": "2.0",
+            "method": "textDocument/didOpen",
+            "params": {
+                "textDocument": {
+                    "uri": uri,
+                    "languageId": "spice",
+                    "version": 1,
+                    "text": source
+                }
+            }
+        }))
+        .await;
+    let _ = server
+        .read_notification("textDocument/publishDiagnostics")
+        .await;
+
+    server
+        .send(json!({
+            "jsonrpc": "2.0",
+            "id": 2,
+            "method": "textDocument/documentSymbol",
+            "params": { "textDocument": { "uri": uri } }
+        }))
+        .await;
+    let response = server.read_response(2).await;
+    let symbols = response["result"].as_array().expect("symbols");
+    assert!(
+        symbols.iter().any(|s| s["name"].as_str() == Some("buffer")),
+        "expected buffer subcircuit in outline: {symbols:?}"
+    );
+    server.shutdown().await;
+}
+
+#[tokio::test]
+async fn goto_definition_on_subckt_reference() {
+    let uri = "file:///test/subckt.cir";
+    let source = fixture("valid/subckt.cir");
+    let use_line = source.lines().nth(4).expect("X1 line");
+    let subckt_offset = use_line.find("buffer").expect("buffer in X1 line");
+    let prefix = source
+        .lines()
+        .take(4)
+        .chain(std::iter::once(use_line))
+        .collect::<Vec<_>>()
+        .join("\n");
+    let offset = prefix.len() - use_line.len() + subckt_offset;
+
+    let mut server = LspProcess::spawn().await;
+    handshake(&mut server).await;
+    server
+        .send(json!({
+            "jsonrpc": "2.0",
+            "method": "textDocument/didOpen",
+            "params": {
+                "textDocument": {
+                    "uri": uri,
+                    "languageId": "spice",
+                    "version": 1,
+                    "text": source
+                }
+            }
+        }))
+        .await;
+    let _ = server
+        .read_notification("textDocument/publishDiagnostics")
+        .await;
+
+    let (line, character) = byte_offset_to_line_col(&source, offset);
+    server
+        .send(json!({
+            "jsonrpc": "2.0",
+            "id": 3,
+            "method": "textDocument/definition",
+            "params": {
+                "textDocument": { "uri": uri },
+                "position": { "line": line, "character": character }
+            }
+        }))
+        .await;
+    let response = server.read_response(3).await;
+    let location = &response["result"];
+    assert_eq!(location["uri"], uri);
+    assert_eq!(location["range"]["start"]["line"], 1);
+    server.shutdown().await;
+}
+
+#[tokio::test]
+async fn references_on_subckt_definition() {
+    let uri = "file:///test/subckt.cir";
+    let source = fixture("valid/subckt.cir");
+    let def_line = source.lines().nth(1).expect(".subckt line");
+    let name_offset = def_line.find("buffer").expect("buffer in .subckt");
+    let prefix = source.lines().take(1).collect::<Vec<_>>().join("\n");
+    let offset = prefix.len() + 1 + name_offset;
+
+    let mut server = LspProcess::spawn().await;
+    handshake(&mut server).await;
+    server
+        .send(json!({
+            "jsonrpc": "2.0",
+            "method": "textDocument/didOpen",
+            "params": {
+                "textDocument": {
+                    "uri": uri,
+                    "languageId": "spice",
+                    "version": 1,
+                    "text": source
+                }
+            }
+        }))
+        .await;
+    let _ = server
+        .read_notification("textDocument/publishDiagnostics")
+        .await;
+
+    let (line, character) = byte_offset_to_line_col(&source, offset);
+    server
+        .send(json!({
+            "jsonrpc": "2.0",
+            "id": 4,
+            "method": "textDocument/references",
+            "params": {
+                "textDocument": { "uri": uri },
+                "position": { "line": line, "character": character },
+                "context": { "includeDeclaration": true }
+            }
+        }))
+        .await;
+    let response = server.read_response(4).await;
+    let locations = response["result"].as_array().expect("references");
+    assert!(
+        locations.len() >= 2,
+        "expected definition + usage references, got {locations:?}"
+    );
+    server.shutdown().await;
+}
+
+fn byte_offset_to_line_col(source: &str, offset: usize) -> (u32, u32) {
+    let prefix = &source[..offset.min(source.len())];
+    let line = prefix.matches('\n').count() as u32;
+    let line_start = prefix.rfind('\n').map(|i| i + 1).unwrap_or(0);
+    let character = source[line_start..offset]
+        .chars()
+        .map(|c| c.len_utf16())
+        .sum::<usize>() as u32;
+    (line, character)
+}
+
+#[tokio::test]
 async fn unclosed_subckt_publishes_diagnostics() {
     let uri = "file:///test/unclosed-subckt.cir";
     let source = fixture("invalid/unclosed-subckt.cir");
