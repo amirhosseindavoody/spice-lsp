@@ -17,7 +17,6 @@ concurrency:
 
 permissions:
   contents: write
-  pages: write
 
 jobs:
   deploy:
@@ -41,28 +40,3 @@ jobs:
           publish_dir: ./docs/book
           publish_branch: gh-pages
           force_orphan: true
-
-      - name: Configure GitHub Pages (gh-pages branch)
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          if ! gh api "/repos/${{ github.repository }}/pages" >/dev/null 2>&1; then
-            gh api -X POST "/repos/${{ github.repository }}/pages" \
-              -f build_type=legacy \
-              -f source[branch]=gh-pages \
-              -f source[path]=/
-          else
-            gh api -X PUT "/repos/${{ github.repository }}/pages" \
-              -f build_type=legacy \
-              -f source[branch]=gh-pages \
-              -f source[path]=/
-          fi
-
-      - name: Set repository website field
-        continue-on-error: true
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          pages_url="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/"
-          gh api -X PATCH "/repos/${{ github.repository }}" \
-            -f homepage="$pages_url"

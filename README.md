@@ -48,7 +48,13 @@ Preview with live reload:
 pixi run mdbook-serve
 ```
 
-Published site (after the deploy workflow runs on `main`): **https://amirhosseindavoody.github.io/spice-lsp/**
+Published site (after deploy workflow + one-time Pages setup): **https://amirhosseindavoody.github.io/spice-lsp/**
+
+First-time setup (repository admin, after the first deploy):
+
+```bash
+./scripts/setup-github-pages.sh
+```
 
 ## MVP in one page
 
