@@ -1,6 +1,6 @@
 # Introduction
 
-**Last verified against:** LSP MVP foundation (spice-parser + spice-lsp binary)
+**Last verified against:** LSP MVP with VS Code extension and integration tests
 
 spice-lsp is a language server and formatter for SPICE circuit simulation netlists. The **end goal** is a VS Code extension that provides real-time diagnostics, dialect-aware documentation on hover, navigation, formatting, and connectivity warnings while editing `.cir`, `.sp`, and related files.
 

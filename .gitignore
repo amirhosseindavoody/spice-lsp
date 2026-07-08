@@ -11,3 +11,8 @@ docs/book/
 # tree-sitter generate artifacts (keep src/parser.c in git)
 tree-sitter-spice/node_modules/
 tree-sitter-spice/tree-sitter.json
+
+# VS Code extension
+editors/vscode/node_modules/
+editors/vscode/out/
+editors/vscode/*.vsix

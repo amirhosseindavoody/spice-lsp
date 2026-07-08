@@ -2,7 +2,7 @@
 
 Language server and formatter for [SPICE](https://en.wikipedia.org/wiki/SPICE) circuit simulation netlists.
 
-**Current status:** MVP foundation — Rust workspace with Tree-sitter grammar, `spice-parser` diagnostics, and `spice-lsp` stdio language server. VS Code extension not yet implemented.
+**Current status:** MVP — Tree-sitter grammar, `spice-parser`, `spice-lsp` stdio server, VS Code extension, and LSP integration tests.
 
 ## End goal
 
