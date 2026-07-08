@@ -35,11 +35,20 @@ pixi run test           # unit and integration tests
 pixi run spice-lsp      # run the language server (stdio)
 ```
 
-Build the docs locally (after `mdbook` is added to the pixi environment):
+Build the documentation site locally:
 
 ```bash
-pixi run mdbook serve docs
+pixi run mdbook-build
+# output: docs/book/
 ```
+
+Preview with live reload:
+
+```bash
+pixi run mdbook-serve
+```
+
+Published site (after the deploy workflow runs on `main`): **https://amirhosseindavoody.github.io/spice-lsp/**
 
 ## MVP in one page
 

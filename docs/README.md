@@ -31,10 +31,13 @@ v0.5 is where you maintain `reference/<dialect>/` documentation and the LSP begi
 
 ## Build the book locally
 
-Once `mdbook` is in the pixi environment:
-
 ```bash
-pixi run mdbook serve docs
+pixi run mdbook-build    # render static site to docs/book/
+pixi run mdbook-serve      # preview at http://127.0.0.1:3000
 ```
 
-Open the URL printed in the terminal (default `http://localhost:3000`).
+## Published site
+
+Pushes to `main` that touch `docs/` deploy the book to the `gh-pages` branch via [`.github/workflows/deploy-docs.yml`](../.github/workflows/deploy-docs.yml).
+
+**https://amirhosseindavoody.github.io/spice-lsp/**
