@@ -8,7 +8,15 @@ version = "0.1.0"
 [tasks]
 mdbook-build = "mdbook build docs"
 mdbook-serve = "mdbook serve docs -n 127.0.0.1 -p 3000"
+build = "cargo build --release -p spice-lsp"
+build-dev = "cargo build -p spice-lsp"
+test = "cargo test --workspace"
+spice-lsp = "cargo run -p spice-lsp"
+fmt = "cargo fmt --all"
+clippy = "cargo clippy --workspace -- -D warnings"
+grammar-generate = { cwd = "tree-sitter-spice", cmd = "npx --yes tree-sitter-cli@0.24 generate" }
 
 [dependencies]
 rust = ">=1.96.1,<1.97"
 mdbook = ">=0.5.4,<0.6"
+nodejs = "22.*"

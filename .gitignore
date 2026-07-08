@@ -4,3 +4,10 @@
 
 # mdBook output
 docs/book/
+
+# Rust
+/target/
+
+# tree-sitter generate artifacts (keep src/parser.c in git)
+tree-sitter-spice/node_modules/
+tree-sitter-spice/tree-sitter.json

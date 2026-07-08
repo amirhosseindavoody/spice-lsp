@@ -1,0 +1,16 @@
+[package]
+name = "tree-sitter-spice"
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+description = "Tree-sitter parser for SPICE netlists"
+build = "build.rs"
+
+[lib]
+path = "bindings/rust/lib.rs"
+
+[dependencies]
+tree-sitter = { workspace = true }
+
+[build-dependencies]
+cc = "1.1"
