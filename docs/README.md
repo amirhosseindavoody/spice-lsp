@@ -1,35 +1,37 @@
 # Introduction
 
-**Last verified against:** documentation expansion (pre-MVP scaffolding — no LSP crate yet)
+**Last verified against:** dialect reference and net semantics roadmap (pre-MVP scaffolding)
 
-spice-lsp is a language server and formatter for SPICE circuit simulation netlists. The **end goal** is a VS Code extension that provides real-time diagnostics, navigation, and formatting while editing `.cir`, `.sp`, and related netlist files.
+spice-lsp is a language server and formatter for SPICE circuit simulation netlists. The **end goal** is a VS Code extension that provides real-time diagnostics, dialect-aware documentation on hover, navigation, formatting, and connectivity warnings while editing `.cir`, `.sp`, and related files.
 
 This book is generated with [mdBook](https://rust-lang.github.io/mdBook/) from the `docs/` directory.
 
-## Where to start
+## How to read this book
 
-| If you want to… | Read |
-|-----------------|------|
-| Set up the repo and run builds | [Getting Started](2_getting-started.md) |
-| Understand MVP scope and ship a demo fast | [MVP Guide](development/2_mvp.md) |
-| Demo or test manually and in CI | [Demo and Testing](development/3_demo-and-test.md) |
-| Wire up VS Code | [VS Code Integration](development/4_vscode-integration.md) |
-| Understand crate layout and phases | [Architecture](4_architecture.md) |
+| Stage | Chapters |
+|-------|----------|
+| **Setup and ship MVP** | [Getting Started](2_getting-started.md) → [Principles](3_principles.md) → [MVP Guide](development/2_mvp.md) → [Demo and Testing](development/3_demo-and-test.md) |
+| **Understand the system** | [Architecture](4_architecture.md) → [LSP Features](5_lsp-features.md) |
+| **Long-term direction** | [Dialect Reference and Net Semantics](8_dialect-reference-and-semantics.md) → [Formatter](6_formatter.md) → [Limitations](7_limitations.md) |
+| **VS Code** | [VS Code Integration](development/4_vscode-integration.md) |
 
-Quick setup (pixi, clone, build) also lives in the repository [README.md](../README.md).
+Quick setup lives in the repository [README.md](../README.md).
 
 ## Roadmap at a glance
 
 ```
-MVP          → syntax diagnostics in VS Code
-v0.2         → outline, go to definition, references
-v0.3         → completion, hover, snippets
-v0.4         → formatter, dialect settings
+MVP     Syntax diagnostics in VS Code
+v0.2    Outline, go to definition, duplicate/undefined warnings
+v0.3    Completion, file-local hover
+v0.4    Formatter, dialect setting
+v0.5    Curated dialect reference (hover) + dangling-node / floating-net warnings
 ```
+
+v0.5 is where you maintain `reference/<dialect>/` documentation and the LSP begins SPICE-specific semantic assistance beyond syntax. Not part of MVP.
 
 ## Build the book locally
 
-Once `mdbook` is added to the pixi environment:
+Once `mdbook` is in the pixi environment:
 
 ```bash
 pixi run mdbook serve docs

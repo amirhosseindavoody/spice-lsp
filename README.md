@@ -8,11 +8,12 @@ Language server and formatter for [SPICE](https://en.wikipedia.org/wiki/SPICE) c
 
 Ship a **VS Code extension** that starts the `spice-lsp` binary over stdio and provides:
 
-- Real-time syntax diagnostics as you edit `.cir`, `.sp`, and related netlist files
-- Document outline for subcircuits and models (post-MVP)
-- Go to definition, hover, completion, and format-on-save (later phases)
+- Real-time syntax diagnostics as you edit netlists (MVP)
+- Navigation, completion, and formatting (v0.2–v0.4)
+- **Dialect-aware documentation on hover** — curated reference files you maintain per Ngspice / LTspice / HSPICE (v0.5)
+- **Connectivity warnings** — dangling nodes and floating nets highlighted before simulation (v0.5)
 
-See [VS Code integration](docs/development/4_vscode-integration.md) for the extension layout and dev workflow.
+See [VS Code integration](docs/development/4_vscode-integration.md) and [Dialect reference and net semantics](docs/8_dialect-reference-and-semantics.md).
 
 ## Prerequisites
 
@@ -46,10 +47,10 @@ The fastest path to something you can **demo in VS Code** is intentionally narro
 
 | MVP delivers | MVP defers |
 |--------------|------------|
-| Stdio LSP server (`initialize`, text sync, `publishDiagnostics`) | Semantic analysis (floating nodes, duplicate IDs) |
-| Tree-sitter parse of a single dialect (start with Ngspice) | Formatter |
-| Syntax diagnostics from the parse tree | Completion, hover, go-to-definition |
-| VS Code extension that launches the binary and shows squiggles | HSPICE / LTspice dialect switches |
+| Stdio LSP server (`initialize`, text sync, `publishDiagnostics`) | Dialect reference hover (curated `reference/` corpus) |
+| Tree-sitter parse of a single dialect (start with Ngspice) | Floating-net / dangling-node analysis |
+| Syntax diagnostics from the parse tree | Formatter, completion, navigation |
+| VS Code extension that launches the binary and shows squiggles | Multi-dialect reference libraries |
 
 **Build order:** Cargo workspace → minimal grammar → LSP skeleton → sample netlist fixtures → VS Code extension → integration test that speaks JSON-RPC.
 
@@ -73,7 +74,8 @@ The book lives under `docs/` and is built with [mdBook](https://rust-lang.github
 | Chapter | Topic |
 |---------|-------|
 | [Getting started](docs/2_getting-started.md) | Setup, pixi workflow, first run |
-| [Architecture](docs/4_architecture.md) | Crates, parser/LSP pipeline, phased rollout |
+| [Architecture](docs/4_architecture.md) | Crates, phased rollout (MVP → v0.5) |
+| [Dialect reference and net semantics](docs/8_dialect-reference-and-semantics.md) | Curated docs + floating/dangling analysis (post-MVP) |
 | [MVP guide](docs/development/2_mvp.md) | Minimal implementation before more features |
 | [VS Code integration](docs/development/4_vscode-integration.md) | Extension structure and publishing |
 | [Design (internal)](docs/internal/1_design.md) | Requirements and capability spec |
@@ -87,7 +89,12 @@ spice-lsp/
 ├── Cargo.toml                 # Rust workspace root (MVP)
 ├── crates/
 │   ├── spice-parser/          # Tree-sitter grammar + diagnostics
+│   ├── spice-reference/       # Dialect doc index (v0.5)
 │   └── spice-lsp/             # tower-lsp binary
+├── reference/                 # Curated dialect docs — authored over time (v0.5)
+│   ├── ngspice/
+│   ├── ltspice/
+│   └── hspice/
 ├── tree-sitter-spice/         # Grammar sources and queries
 ├── editors/
 │   └── vscode/                # VS Code extension (MVP client)

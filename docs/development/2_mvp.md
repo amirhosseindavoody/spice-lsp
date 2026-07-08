@@ -253,13 +253,13 @@ Optional: record asciinema or short screen capture for README.
 Do **not** implement these before M7 is done:
 
 - Formatter
-- Completion, hover, definition
-- Multi-dialect switching
+- Completion, hover, go-to-definition, references
+- Multi-dialect switching and `reference/` corpus
 - `.include` file resolution
-- Semantic duplicate-name analysis
+- Semantic analysis (duplicate names, undefined models, dangling nodes, floating nets)
 - Published VSIX / Marketplace listing (side-load is enough for MVP demo)
 
-Add them in the order listed in [LSP features](../5_lsp-features.md).
+After MVP, follow the phase order in [Architecture](../4_architecture.md). Dialect reference hover and net connectivity are **v0.5** — see [Dialect reference and net semantics](../8_dialect-reference-and-semantics.md).
 
 ---
 
@@ -282,3 +282,4 @@ Each PR should keep `pixi run test` green (or skip tests until the crate exists,
 - [Architecture](../4_architecture.md) — where code lives
 - [Demo and testing](3_demo-and-test.md)
 - [VS Code integration](4_vscode-integration.md)
+- [Dialect reference and net semantics](../8_dialect-reference-and-semantics.md) — post-MVP direction

@@ -1,31 +1,31 @@
 # LSP Features
 
-Language Server Protocol methods spice-lsp implements or plans to implement. Status reflects the roadmap; MVP ships only the rows marked **MVP**.
+LSP methods spice-lsp implements or plans to implement, organized by release phase. MVP ships only syntax sync and diagnostics; richer behavior accumulates in later versions.
 
 ## Capability matrix
 
-| LSP method / feature | MVP | v0.2 | v0.3 | v0.4 | Notes |
-|----------------------|-----|------|------|------|-------|
-| `initialize` / `initialized` | ✓ | | | | Advertise sync + server info |
-| `shutdown` / `exit` | ✓ | | | | Clean teardown |
-| `textDocument/didOpen` | ✓ | | | | Full buffer sync |
-| `textDocument/didChange` | ✓ | | | | Incremental content changes |
-| `textDocument/didClose` | ✓ | | | | Drop document from store |
-| `textDocument/didSave` | | | | ✓ | Optional re-lint on save |
-| `textDocument/publishDiagnostics` | ✓ | | | | Syntax errors from parser |
-| `textDocument/documentSymbol` | | ✓ | | | `.subckt`, `.model`, top-level instances |
-| `textDocument/definition` | | ✓ | | | Jump to `.subckt` / `.model` / `.param` |
-| `textDocument/references` | | ✓ | | | Find usages of symbols |
-| `textDocument/hover` | | | ✓ | | Pin order, parameter docs |
-| `textDocument/completion` | | | ✓ | | Elements, directives, `.model` names |
-| `completionItem/resolve` | | | ✓ | | Extra detail for complex items |
-| `textDocument/formatting` | | | | ✓ | Full-buffer format |
-| `textDocument/rangeFormatting` | | | | ✓ | Selection format |
-| `$/progress` | | | | ✓ | Long format on huge files |
+| LSP method / feature | MVP | v0.2 | v0.3 | v0.4 | v0.5 |
+|----------------------|-----|------|------|------|------|
+| `initialize` / `initialized` | ✓ | | | | |
+| `shutdown` / `exit` | ✓ | | | | |
+| `textDocument/didOpen` / `didChange` / `didClose` | ✓ | | | | |
+| `textDocument/publishDiagnostics` | ✓ | | | | syntax |
+| Syntax diagnostics | ✓ | | | | |
+| Duplicate / undefined symbol diagnostics | | ✓ | | | |
+| Dangling node / floating net diagnostics | | | | | ✓ |
+| `textDocument/documentSymbol` | | ✓ | | | |
+| `textDocument/definition` / `references` | | ✓ | | | |
+| `textDocument/completion` | | | ✓ | | |
+| `textDocument/hover` (file-local) | | | ✓ | | subcircuit pins, in-file models |
+| `textDocument/hover` (dialect reference) | | | | | ✓ |
+| `textDocument/formatting` | | | | ✓ | |
+| `textDocument/didSave` (re-lint) | | | | ✓ | |
 
-## MVP server capabilities
+Full specification of reference hover and net diagnostics: [Dialect reference and net semantics](8_dialect-reference-and-semantics.md).
 
-The MVP `InitializeResult` should advertise at minimum:
+## MVP
+
+### Server capabilities
 
 ```json
 {
@@ -36,85 +36,92 @@ The MVP `InitializeResult` should advertise at minimum:
       "save": false
     }
   },
-  "serverInfo": {
-    "name": "spice-lsp",
-    "version": "0.1.0"
-  }
+  "serverInfo": { "name": "spice-lsp", "version": "0.1.0" }
 }
 ```
 
-`change: 2` means **Incremental** sync — the client sends edit ranges rather than the full document on every keystroke.
+`change: 2` is **Incremental** sync — the client sends edit ranges, not the full buffer every keystroke.
 
-Diagnostics are pushed via **`textDocument/publishDiagnostics`** (server → client notification), not a request/response pair.
+Diagnostics arrive via server-initiated `textDocument/publishDiagnostics`.
 
-## Diagnostics (MVP detail)
+### Syntax diagnostics
 
-| Source | Example message | Severity |
-|--------|-----------------|----------|
+| Source | Example | Severity |
+|--------|---------|----------|
 | Unclosed `.subckt` | `missing .ends for subcircuit X` | Error |
 | Parse ERROR node | `unexpected token` | Error |
-| Missing child node | `expected node list` | Error |
-| (v0.2) Duplicate `R1` | `duplicate component name 'R1'` | Warning |
-| (v0.2) Unknown model | `model 'nfet' not defined` | Warning |
+| Missing CST child | `expected node list` | Error |
 
-Ranges must use LSP positions (0-based line/character, UTF-16 code units).
+## v0.2 — Symbols and light semantics
 
-## Document symbols (v0.2)
-
-Outline entries for the VS Code outline / breadcrumb UI:
+**Document symbols** for outline / breadcrumbs:
 
 | Symbol kind | SPICE construct |
 |-------------|-----------------|
 | `Namespace` | `.subckt` block |
-| `Class` | `.model` definition |
+| `Class` | `.model` |
 | `Variable` | `.param` |
-| `Field` | Top-level instance (R, C, L, …) |
+| `Field` | Instance line |
 
-## Navigation (v0.2)
+**Navigation:** go to definition and find references for subcircuits, models, and parameters.
 
-- **Go to definition:** cursor on subcircuit call or model name → jump to `.subckt` / `.model`
-- **Find references:** reverse index from definitions to usages
+**Diagnostics:**
 
-Requires a symbol table built during semantic analysis — see [Architecture](4_architecture.md).
+| Code | Example | Severity |
+|------|---------|----------|
+| `spice/duplicate-name` | `duplicate component name 'R1'` | Warning |
+| `spice/unknown-model` | `model 'nfet' not defined` | Warning |
 
-## Completion (v0.3)
+## v0.3 — Completion and file-local hover
 
-Context-aware triggers:
+**Completion** contexts: element letters, directive names, in-scope model and subcircuit names, snippet templates for `.tran` / `.subckt`.
 
-| Context | Suggestions |
-|---------|-------------|
-| Start of line | `R`, `C`, `L`, `V`, `I`, `M`, `X`, `.subckt`, `.model`, `.tran`, … |
-| After element letter | Snippet with node placeholders |
-| Model slot | Known `.model` names in scope |
-| Subcircuit call | Known `.subckt` names |
+**Hover (file-local only):** subcircuit port order, parameters from `.model` / `.subckt` in the open buffer. No curated reference yet — that is v0.5.
 
-Use LSP `CompletionItemKind` and `insertTextFormat: Snippet` for multi-stop templates.
+## v0.4 — Formatting and dialect
 
-## Formatting (v0.4)
+Registers `documentFormattingProvider`. Dialect setting (`ngspice` | `ltspice` | `hspice`) selects grammar and reference namespace.
 
-See [Formatter](6_formatter.md). Registers as:
+See [Formatter](6_formatter.md).
 
-```json
-"documentFormattingProvider": true,
-"documentRangeFormattingProvider": true
-```
+## v0.5 — Dialect reference hover and net connectivity
 
-## Client configuration (future)
+### Reference-powered hover
 
-Expose via VS Code `settings.json` and LSP `initializationOptions`:
+When the cursor is on a directive, option, element keyword, or documented expression form, the server loads the matching entry from `reference/<dialect>/` and returns markdown:
 
-| Setting | Type | Default | Purpose |
-|---------|------|---------|---------|
-| `spiceLsp.dialect` | `"ngspice" \| "ltspice" \| "hspice"` | `"ngspice"` | Grammar/quirk selection |
-| `spiceLsp.trace.server` | `"off" \| "messages" \| "verbose"` | `"off"` | Debug LSP traffic |
+- Summary and syntax
+- Parameter table with units
+- Examples and `seeAlso` links
 
-## Testing LSP behavior
+You maintain this corpus over time; the LSP only indexes and renders it. Authoring guide: [Dialect reference and net semantics](8_dialect-reference-and-semantics.md#part-1--dialect-reference-library).
 
-Integration tests should cover each implemented method. See [Demo and testing](development/3_demo-and-test.md).
+### Connectivity diagnostics
 
-Priority test cases for MVP:
+| Code | Example | Severity |
+|------|---------|----------|
+| `spice/dangling-node` | `node 'bias' is connected to only one device terminal` | Warning |
+| `spice/floating-net` | `net 'internal' has no DC path to ground` | Warning |
+
+Published alongside syntax diagnostics in `publishDiagnostics`. Configurable via `spiceLsp.diagnostics.*` settings.
+
+## Client configuration
+
+| Setting | Type | Default | Available |
+|---------|------|---------|-----------|
+| `spiceLsp.dialect` | string | `"ngspice"` | v0.4+ |
+| `spiceLsp.diagnostics.danglingNodes` | boolean | `true` | v0.5+ |
+| `spiceLsp.diagnostics.floatingNets` | boolean | `true` | v0.5+ |
+| `spiceLsp.groundNodes` | string[] | `["0","gnd","GND"]` | v0.5+ |
+| `spiceLsp.trace.server` | string | `"off"` | MVP+ |
+
+## Testing
+
+Each phase adds integration tests for newly advertised capabilities. MVP priorities:
 
 1. `initialize` returns expected capabilities
-2. Open document → receive diagnostics notification
-3. Edit document → updated diagnostics
-4. Close document → no crash; reopen works
+2. Open invalid document → diagnostics notification
+3. Edit → updated diagnostics
+4. (v0.5) Open semantic fixture → dangling / floating warnings; hover snapshot matches reference entry
+
+See [Demo and testing](development/3_demo-and-test.md).
