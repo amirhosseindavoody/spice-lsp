@@ -5,48 +5,107 @@ alwaysApply: true
 
 # Keep documentation in sync with code
 
-When you change **user-visible behavior**, **CLI/TUI contracts**, **data loading**, **pixi tasks**, or **project layout**, update documentation in the **same change** (do not defer).
+When you change **user-visible behavior**, **LSP capabilities**, **formatter rules**, **CLI contracts**, **pixi tasks**, or **project layout**, update documentation in the **same change** (do not defer).
+
+## mdBook
+
+Documentation is rendered with [mdBook](https://rust-lang.github.io/mdBook/). The book source lives in `docs/`.
+
+| File | Role |
+|------|------|
+| [docs/SUMMARY.md](../docs/SUMMARY.md) | **Table of contents** — defines sidebar navigation and chapter order for the generated site |
+| [docs/README.md](../docs/README.md) | Book landing page (linked first in `SUMMARY.md`) |
+
+**`SUMMARY.md` is special:** fixed filename, not numbered. Every page that should appear in the built book must be linked from `SUMMARY.md`. When you add, remove, or rename a chapter, update `SUMMARY.md` in the same change.
+
+Use nested `# Section` headings in `SUMMARY.md` for sidebar groups. Link targets use paths relative to `docs/`:
+
+```markdown
+# Summary
+
+[Introduction](README.md)
+
+# User guide
+
+- [Getting Started](2_getting-started.md)
+- [Architecture](4_architecture.md)
+
+# Development
+
+- [Build](development/1_build.md)
+```
+
+Do not link pages in `SUMMARY.md` until the target file exists (mdBook fails on missing chapters).
+
+## Naming convention
+
+Chapter files use a numeric prefix so they sort in reading order:
+
+```
+{N}_{slug}.md
+```
+
+- `N` is a positive integer (`1`, `2`, `3`, …) with no zero-padding.
+- `slug` is lowercase with hyphens (e.g. `getting-started`, `lsp-features`).
+- **Each directory has its own sequence.** Restart numbering at `1_` in every subdirectory.
+
+**Exceptions (do not number):** `SUMMARY.md`, `README.md` (book intro in `docs/`).
+
+Examples:
+
+```
+docs/SUMMARY.md
+docs/README.md
+docs/2_getting-started.md
+docs/development/1_build.md
+docs/internal/1_design.md
+```
+
+When adding a chapter, pick the next number in that directory, create the file, then add a bullet to `SUMMARY.md`. Renumber only when restructuring (update `SUMMARY.md` and cross-links in the same change).
 
 ## Doc tree
 
-**Hub:** [docs/index.md](../docs/index.md)
-
-| Area | Update when you change… |
+| File | Update when you change… |
 |------|-------------------------|
-| [docs/principles.md](../docs/principles.md) | Goals, non-goals, UX values |
-| [docs/architecture.md](../docs/architecture.md) | Crates, module map, shared model |
-| [docs/getting-started.md](../docs/getting-started.md) | Binaries, entry points, setup |
-| [docs/features/cli.md](../docs/features/cli.md) | CLI commands, filter syntax |
-| [docs/features/tui.md](../docs/features/tui.md) | TUI layout, keys, mouse (`csv-utils/src/tui/app.rs`) |
-| [docs/features/web.md](../docs/features/web.md) | Web UI, API, theme |
-| [docs/reference/data-loading.md](../docs/reference/data-loading.md) | Preview APIs, threading |
-| [docs/reference/csv-parsing.md](../docs/reference/csv-parsing.md) | `split_row`, column types, cells |
-| [docs/reference/limitations.md](../docs/reference/limitations.md) | Known constraints |
-| [docs/development/build.md](../docs/development/build.md) | Pixi tasks, conda recipe |
-| [docs/test-data-generation.md](../docs/test-data-generation.md) | `scripts/generate_test_data.py` |
+| [docs/SUMMARY.md](../docs/SUMMARY.md) | Any chapter added, removed, renamed, or regrouped |
+| [docs/README.md](../docs/README.md) | Book intro, “Last verified against”, high-level project overview |
+| [docs/2_getting-started.md](../docs/2_getting-started.md) | Setup, pixi workflow, binaries, editor integration |
+| [docs/3_principles.md](../docs/3_principles.md) | Goals, non-goals, UX values |
+| [docs/4_architecture.md](../docs/4_architecture.md) | Crates, module map, parser/LSP/formatter pipeline |
+| [docs/5_lsp-features.md](../docs/5_lsp-features.md) | LSP methods, diagnostics, completion, navigation |
+| [docs/6_formatter.md](../docs/6_formatter.md) | Formatting rules, alignment, dialect-specific behavior |
+| [docs/7_limitations.md](../docs/7_limitations.md) | Known constraints, unsupported dialect constructs |
+| [docs/development/1_build.md](../docs/development/1_build.md) | Pixi tasks, CI, release builds |
+| [docs/internal/1_design.md](../docs/internal/1_design.md) | Internal design notes (may lead public docs; keep aligned) |
 | [README.md](../README.md) | Quick start, task examples |
 
-[docs/DESIGN.md](../docs/DESIGN.md) is a redirect stub only; edit the targeted doc above.
+Files listed above that do not exist yet should be created when the corresponding code or behavior is first introduced—and linked from `SUMMARY.md` at the same time.
 
 ## When to update
 
 Update docs if you touch any of:
 
-- `csv-utils/src/**`, `csv-utils-core/src/**`
-- `Cargo.toml`, `pixi.toml`, `recipe/recipe.yaml`
-- `scripts/generate_test_data.py`, `scripts/capture_tui_snapshot.py`
+- Rust source (`src/**`, `crates/**`, or workspace `Cargo.toml` files)
+- Tree-sitter grammar or queries (`tree-sitter-spice/**`, `queries/**`)
+- `pixi.toml` (especially `[tasks]`)
+- LSP capability registration or handler behavior
+- Formatter output or CLI flags
+- VS Code / editor extension integration under this repo
+- mdBook config (`book.toml`) or book structure
 
-Skip doc updates only for pure refactors with **no** behavior, CLI, TUI, or task-name changes.
+Skip doc updates only for pure refactors with **no** behavior, LSP, formatter, CLI, or task-name changes.
 
 ## Checklist before finishing
 
 - [ ] Relevant doc(s) describe behavior **after** your change
 - [ ] [README.md](../README.md) examples still run as written
-- [ ] No stale references (removed tasks, wrong paths)
-- [ ] TUI keyboard/mouse tables match `csv-utils/src/tui/app.rs`
+- [ ] No stale references (removed tasks, wrong paths, old unnumbered filenames)
+- [ ] New chapters follow `{N}_{slug}.md` and are linked from [docs/SUMMARY.md](../docs/SUMMARY.md)
+- [ ] LSP/formatter tables match implemented capabilities (not aspirational design-only text)
+- [ ] Bump “Last verified against” in [docs/README.md](../docs/README.md) when materially refreshing docs
 
 ## Style
 
-- Factual, present tense; tables for bindings and flags
-- Prefer editing the section doc over duplicating content in multiple files
-- Bump “Last verified against” in [docs/index.md](../docs/index.md) when materially refreshing docs
+- Factual, present tense; tables for LSP methods, formatter options, and CLI flags
+- Prefer editing the numbered chapter doc over duplicating content in multiple files
+- Keep `SUMMARY.md` lean—navigation only, not chapter content
