@@ -1,0 +1,60 @@
+{
+  "name": "spice-lsp",
+  "displayName": "SPICE Language Support",
+  "description": "Language support for SPICE circuit simulation netlists via spice-lsp",
+  "version": "0.1.0",
+  "publisher": "amirhosseindavoody",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": ["Programming Languages"],
+  "activationEvents": ["onLanguage:spice"],
+  "main": "./out/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "spice",
+        "aliases": ["SPICE", "spice"],
+        "extensions": [".cir", ".sp", ".net", ".ckt"],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "configuration": {
+      "title": "SPICE LSP",
+      "properties": {
+        "spiceLsp.serverPath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to the spice-lsp binary. Leave empty to use the bundled dev path or PATH."
+        },
+        "spiceLsp.trace.server": {
+          "type": "string",
+          "enum": ["off", "messages", "verbose"],
+          "default": "off",
+          "description": "Traces communication between VS Code and the language server."
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "spiceLsp.restartServer",
+        "title": "SPICE LSP: Restart Server"
+      }
+    ]
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.90.0",
+    "@vscode/vsce": "^3.0.0",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "vscode-languageclient": "^9.0.0"
+  }
+}

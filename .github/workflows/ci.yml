@@ -23,3 +23,8 @@ jobs:
 
       - name: Test
         run: pixi run test
+
+      - name: Compile VS Code extension
+        run: |
+          pixi run ext-install
+          pixi run ext-compile
