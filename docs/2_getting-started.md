@@ -95,6 +95,7 @@ If you are new to the repo, follow this order:
 2. Follow [MVP guide](development/2_mvp.md) — implement or review each milestone
 3. Use [Demo and testing](development/3_demo-and-test.md) — verify each layer before adding features
 4. Read [Architecture](4_architecture.md) — understand where new code belongs
+5. Skim [Dialect reference and net semantics](8_dialect-reference-and-semantics.md) — long-term hover and connectivity goals (not MVP)
 
 ## Next steps
 

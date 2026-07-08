@@ -13,8 +13,9 @@ This document defines the system design, capabilities, and requirements for a La
 The LSP server implements the following capabilities to provide real-time IDE feedback:
 
 - **Syntax and Semantic Diagnostics:**
-    - Detect syntax violations (e.g., missing subcircuit terminators `.ends`, incorrect line continuations with `+`).
-    - Flag semantic issues (e.g., floating nodes, duplicate component identifiers, missing model definitions referenced by active devices).
+    - **MVP / syntax:** Missing `.ends`, bad line continuations, parse errors.
+    - **v0.2:** Duplicate component identifiers, undefined model/subcircuit references.
+    - **v0.5 / connectivity:** Dangling nodes (single terminal connection) and floating nets (no DC path to ground). Severity warning; configurable. See [Dialect reference and net semantics](../8_dialect-reference-and-semantics.md).
 - **Navigation (Go to Definition & Find References):**
     - Resolve references for subcircuits (`.subckt`) and models (`.model`).
     - Map parameter definitions (`.param`) to their usages in expressions.
@@ -22,8 +23,8 @@ The LSP server implements the following capabilities to provide real-time IDE fe
     - Offer context-aware suggestions for basic elements (R, C, L, diodes, transistors).
     - Provide templates for simulation directives (e.g., `.tran`, `.ac`, `.dc`, `.temp`).
 - **Hover Documentation:**
-    - Display terminal/pin order mappings for subcircuits and complex devices on hover.
-    - Show parameter units and default values.
+    - **v0.3 (file-local):** Subcircuit pin order, in-file model parameters.
+    - **v0.5 (dialect reference):** Curated documentation for directives (`.tran`, `.ac`), `.option` keywords, element types, and common expressions — **authored per dialect** in a `reference/` corpus the LSP loads at runtime, not hard-coded in server logic. Coverage grows over time as you add entries for Ngspice, LTspice, and HSPICE.
 - **Document Outline (Symbols):**
     - Index hierarchical structures, isolating `.subckt` blocks, `.model` definitions, and control blocks.
 
@@ -70,9 +71,10 @@ The full capability list in sections 2–3 is the **north star**. The first deli
 
 **Out of scope for MVP:**
 
-- Formatter, completion, hover, go-to-definition, references
-- Semantic analysis (duplicate names, undefined models)
-- Multi-dialect and `.include` resolution
+- Formatter, completion, go-to-definition, references
+- Dialect reference corpus and reference-powered hover
+- Floating-net / dangling-node analysis
+- Multi-dialect reference namespaces and `.include` resolution
 
 ### 4.0.2 MVP milestones
 
@@ -110,7 +112,16 @@ Distribution path:
 
 Extension architecture (thin Node client, Rust server): [VS Code integration](../development/4_vscode-integration.md).
 
-Post-MVP features roll out in phases documented in [Architecture](../4_architecture.md) and [LSP features](../5_lsp-features.md).
+Post-MVP features roll out in phases documented in [Architecture](../4_architecture.md) and [LSP features](../5_lsp-features.md). Deep semantics (reference library + net connectivity) are specified in [Dialect reference and net semantics](../8_dialect-reference-and-semantics.md).
+
+### 4.0.5 Post-MVP roadmap (summary)
+
+| Phase | Focus |
+|-------|-------|
+| v0.2 | Symbol index, navigation, duplicate/undefined warnings |
+| v0.3 | Completion, file-local hover |
+| v0.4 | Formatter, dialect setting |
+| v0.5 | Curated dialect reference → hover; dangling-node and floating-net diagnostics |
 
 ---
 
@@ -136,16 +147,21 @@ The system uses a classic compiler frontend architecture integrated into an even
 │    │   Concrete Syntax Tree (CST)                   │   │
 │    │                                                │   │
 │    ├─► [Diagnostics Analyzer] ◄─────────────────────┘   │
-│    │   Traverses CST to find syntax/semantic issues    │
+│    │   Syntax (MVP), symbols (v0.2), connectivity (v0.5)│
+│    │                                                   │
+│    ├─► [Reference Index] ◄── reference/<dialect>/     │
+│    │   v0.5: hover docs for directives, options, elems │
 │    │                                                   │
 │    └─► [Formatter Engine] ◄─────────────────────────┘   │
-│        Applies columnar alignment & continuation formatting│
+│        v0.4: columnar alignment & continuation formatting│
 └────────────────────────────────────────────────────────┘
 ```
 
-- **LSP Layer:** Handles connection lifecycle, text document synchronization (`textDocument/didOpen`, `textDocument/didChange`), and capability routing.
-- **Incremental Parsing:** Tree-sitter maintains an active syntax tree in memory. On document edits, only modified ranges are re-parsed, keeping latency negligible.
-- **Formatting Pipeline:** The formatter reads the CST, applies structural rules (such as aligning nodes and standardizing `+` continuation lines), and outputs a unified set of `TextEdit` actions.
+- **LSP Layer:** Handles connection lifecycle, text document synchronization, and capability routing.
+- **Incremental Parsing:** Tree-sitter maintains an active syntax tree; edits re-parse only changed ranges.
+- **Reference Index (v0.5):** Loads structured JSON entries from `reference/` per active dialect; powers `textDocument/hover` and enriches completion documentation. Maintained manually over time — see [Dialect reference and net semantics](../8_dialect-reference-and-semantics.md).
+- **Net Graph (v0.5):** Builds terminal connectivity from instance lines; emits dangling-node and floating-net warnings.
+- **Formatting Pipeline (v0.4):** CST → column rules → `TextEdit` actions.
 
 ### 5.3 Key Dependencies
 

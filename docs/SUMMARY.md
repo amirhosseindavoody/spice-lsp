@@ -10,6 +10,7 @@
 - [LSP Features](5_lsp-features.md)
 - [Formatter](6_formatter.md)
 - [Limitations](7_limitations.md)
+- [Dialect Reference and Net Semantics](8_dialect-reference-and-semantics.md)
 
 # Development
 
