@@ -1,16 +1,17 @@
 use tree_sitter::{Node, Parser, Tree};
 
 use crate::diagnostic::{Diagnostic, Severity, Span};
-use crate::subckt::{dot_directive_spans, subckt_diagnostics};
+use crate::symbols::{build_index, classify_line, Index, LineKind};
 
 /// Result of analyzing a netlist buffer.
 #[derive(Debug, Clone)]
 pub struct ParseResult {
     pub tree: Tree,
     pub diagnostics: Vec<Diagnostic>,
+    pub index: Index,
 }
 
-/// Parse `source` and return syntax / structural diagnostics.
+/// Parse `source` and return syntax / structural / semantic diagnostics.
 pub fn analyze(source: &str) -> ParseResult {
     let mut parser = Parser::new();
     parser
@@ -20,12 +21,43 @@ pub fn analyze(source: &str) -> ParseResult {
     let tree = parser.parse(source, None).expect("parse succeeds");
     let root = tree.root_node();
 
+    let lines = collect_lines(source, root);
+    let (index, semantic_diagnostics) = build_index(source, &lines);
+
     let mut diagnostics = tree_diagnostics(source, root);
-    diagnostics.extend(subckt_diagnostics(&dot_directive_spans(source, root)));
+    diagnostics.extend(semantic_diagnostics);
     diagnostics.sort_by_key(|d| (d.span.start, d.span.end));
     diagnostics.dedup_by(|a, b| a.span == b.span && a.message == b.message);
 
-    ParseResult { tree, diagnostics }
+    ParseResult {
+        tree,
+        diagnostics,
+        index,
+    }
+}
+
+fn collect_lines(source: &str, root: Node<'_>) -> Vec<(Span, LineKind)> {
+    let mut out = Vec::new();
+    collect_line_nodes(source, root, &mut out);
+    out
+}
+
+fn collect_line_nodes(source: &str, node: Node<'_>, out: &mut Vec<(Span, LineKind)>) {
+    match node.kind() {
+        "dot_directive_line" | "instance_line" => {
+            let span = Span {
+                start: node.start_byte(),
+                end: node.end_byte(),
+            };
+            out.push((span, classify_line(source, span)));
+        }
+        _ => {
+            let mut cursor = node.walk();
+            for child in node.children(&mut cursor) {
+                collect_line_nodes(source, child, out);
+            }
+        }
+    }
 }
 
 fn tree_diagnostics(source: &str, root: Node<'_>) -> Vec<Diagnostic> {
@@ -63,6 +95,7 @@ fn push_span_diagnostic(
         message: message.to_string(),
         severity,
         span: Span { start, end },
+        code: None,
     });
 }
 
@@ -100,6 +133,49 @@ mod tests {
                 .any(|d| d.message.contains("missing .ends")),
             "expected missing .ends diagnostic, got {:?}",
             result.diagnostics
+        );
+    }
+
+    #[test]
+    fn duplicate_instance_reports_warning() {
+        let source = fixture("invalid/duplicate-instance.cir");
+        let result = analyze(&source);
+        assert!(
+            result.diagnostics.iter().any(|d| {
+                d.code.as_deref() == Some("spice/duplicate-name")
+                    && d.message.contains("R1")
+            }),
+            "expected duplicate R1 warning, got {:?}",
+            result.diagnostics
+        );
+    }
+
+    #[test]
+    fn unknown_subckt_reports_warning() {
+        let source = fixture("invalid/unknown-subckt.cir");
+        let result = analyze(&source);
+        assert!(
+            result.diagnostics.iter().any(|d| {
+                d.code.as_deref() == Some("spice/unknown-model")
+                    && d.message.contains("missingbuf")
+            }),
+            "expected unknown subcircuit warning, got {:?}",
+            result.diagnostics
+        );
+    }
+
+    #[test]
+    fn subckt_fixture_builds_outline() {
+        let source = fixture("valid/subckt.cir");
+        let result = analyze(&source);
+        assert!(
+            result
+                .index
+                .document_symbols
+                .iter()
+                .any(|s| s.name == "buffer"),
+            "expected buffer subcircuit in outline, got {:?}",
+            result.index.document_symbols
         );
     }
 }

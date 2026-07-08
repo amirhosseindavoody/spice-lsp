@@ -19,6 +19,7 @@ pub struct Diagnostic {
     pub message: String,
     pub severity: Severity,
     pub span: Span,
+    pub code: Option<String>,
 }
 
 impl Diagnostic {
@@ -27,6 +28,7 @@ impl Diagnostic {
             message: message.into(),
             severity: Severity::Error,
             span,
+            code: None,
         }
     }
 }
