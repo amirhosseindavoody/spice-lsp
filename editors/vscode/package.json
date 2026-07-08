@@ -1,14 +1,23 @@
 {
   "name": "spice-lsp",
   "displayName": "SPICE Language Support",
-  "description": "Language support for SPICE circuit simulation netlists via spice-lsp",
-  "version": "0.1.0",
+  "description": "Language support for SPICE circuit simulation netlists — syntax diagnostics, outline, go to definition, and find references.",
+  "version": "0.2.0",
   "publisher": "amirhosseindavoody",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/amirhosseindavoody/spice-lsp.git"
+  },
+  "homepage": "https://github.com/amirhosseindavoody/spice-lsp",
+  "bugs": {
+    "url": "https://github.com/amirhosseindavoody/spice-lsp/issues"
+  },
   "engines": {
     "vscode": "^1.90.0"
   },
   "categories": ["Programming Languages"],
+  "keywords": ["spice", "ngspice", "circuit", "netlist", "lsp", "simulation"],
   "activationEvents": ["onLanguage:spice"],
   "main": "./out/extension.js",
   "contributes": {
@@ -26,7 +35,7 @@
         "spiceLsp.serverPath": {
           "type": "string",
           "default": "",
-          "description": "Path to the spice-lsp binary. Leave empty to use the bundled dev path or PATH."
+          "description": "Path to the spice-lsp binary. Leave empty to use the bundled binary for your platform."
         },
         "spiceLsp.trace.server": {
           "type": "string",
@@ -44,9 +53,11 @@
     ]
   },
   "scripts": {
+    "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
-    "package": "vsce package"
+    "package": "vsce package --no-dependencies",
+    "publish": "vsce publish --no-dependencies"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

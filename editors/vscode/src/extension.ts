@@ -10,11 +10,28 @@ import {
 } from "vscode-languageclient/node";
 
 let client: LanguageClient | undefined;
+let extensionPath = "";
+
+export function getPlatformId(): string {
+  return `${process.platform}-${process.arch}`;
+}
+
+function bundledBinaryPath(root: string): string {
+  const exe = process.platform === "win32" ? "spice-lsp.exe" : "spice-lsp";
+  return path.join(root, "bin", getPlatformId(), exe);
+}
 
 function resolveServerPath(config: vscode.WorkspaceConfiguration): string {
   const configured = config.get<string>("serverPath")?.trim();
   if (configured) {
     return configured;
+  }
+
+  if (extensionPath) {
+    const bundled = bundledBinaryPath(extensionPath);
+    if (fs.existsSync(bundled)) {
+      return bundled;
+    }
   }
 
   const devBinary = path.resolve(
@@ -93,6 +110,7 @@ async function startClient(): Promise<void> {
 }
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
+  extensionPath = context.extensionPath;
   await startClient();
 
   context.subscriptions.push({

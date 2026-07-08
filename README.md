@@ -2,7 +2,19 @@
 
 Language server and formatter for [SPICE](https://en.wikipedia.org/wiki/SPICE) circuit simulation netlists.
 
-**Current status:** MVP — Tree-sitter grammar, `spice-parser`, `spice-lsp` stdio server, VS Code extension, and LSP integration tests.
+**Current status:** v0.2 — syntax + semantic diagnostics, document outline, go to definition, find references; VS Code extension with bundled binaries and Marketplace release workflow.
+
+## VS Code extension
+
+Install from the Marketplace (search **SPICE Language Support**) once published, or side-load a `.vsix`:
+
+```bash
+pixi run build
+pixi run ext-package
+code --install-extension editors/vscode/spice-lsp-0.2.0.vsix
+```
+
+Marketplace publish is automated via GitHub Actions — see [VS Code integration](docs/development/4_vscode-integration.md#publishing).
 
 ## End goal
 

@@ -187,28 +187,57 @@ Follow [Demo and testing](3_demo-and-test.md) VS Code section.
 
 ## Bundling the server binary
 
-For distribution, the extension must ship or download `spice-lsp` per platform.
+The Marketplace extension ships a **platform-specific binary** inside the `.vsix` under `bin/<platform>-<arch>/`:
+
+| Platform id | OS / arch |
+|-------------|-----------|
+| `linux-x64` | Linux x86_64 |
+| `linux-arm64` | Linux ARM64 |
+| `darwin-x64` | macOS Intel |
+| `darwin-arm64` | macOS Apple Silicon |
+| `win32-x64` | Windows x64 |
+
+At activation, the extension resolves the binary in this order:
+
+1. `spiceLsp.serverPath` setting (if set)
+2. Bundled binary at `bin/<platform>-<arch>/spice-lsp` inside the extension
+3. Local dev paths under `target/debug` or `target/release` (F5 from this repo)
+4. `spice-lsp` on `PATH`
+
+### Package locally
+
+Build a release binary for the current platform and create a `.vsix`:
+
+```bash
+pixi run build
+pixi run ext-package
+# output: editors/vscode/spice-lsp-0.2.0.vsix
+```
+
+Install side-loaded:
+
+```bash
+code --install-extension editors/vscode/spice-lsp-0.2.0.vsix
+```
+
+### CI release workflow
+
+The [Release VS Code extension](../../.github/workflows/release-vscode.yml) workflow:
+
+1. Cross-compiles `spice-lsp` for all supported platform ids
+2. Assembles a single `.vsix` containing every platform binary
+3. Uploads the VSIX as a GitHub Actions artifact
+4. On tag push `vscode-v*`, attaches the VSIX to a GitHub Release
+5. Publishes to the VS Code Marketplace when `VSCE_PAT` is configured
 
 | Strategy | Pros | Cons |
 |----------|------|------|
-| **User PATH** | Simplest for MVP dev | Poor UX for end users |
+| **User PATH** | Simplest for local dev | Poor UX for end users |
 | **Setting `serverPath`** | Flexible | Manual configuration |
-| **Bundle in `.vsix`** | Works offline | Large artifact; need per-OS builds |
+| **Bundle in `.vsix`** | Works offline; Marketplace default | Larger artifact; CI builds all platforms |
 | **Download from GitHub Releases on activate** | Small VSIX | Requires network on first run |
 
-Recommended path:
-
-1. **MVP:** `serverPath` setting + document in README
-2. **v0.2:** Download release asset matching `process.platform` + `process.arch`
-3. **v0.3:** Optional bundled binary in marketplace package
-
-Example release asset names:
-
-```
-spice-lsp-x86_64-unknown-linux-gnu
-spice-lsp-aarch64-apple-darwin
-spice-lsp-x86_64-pc-windows-msvc.exe
-```
+The Marketplace release uses **bundle in `.vsix`**.
 
 ## TextMate grammar (optional for MVP)
 
@@ -232,16 +261,41 @@ Tree-sitter-based highlighting via `nvim-treesitter` is separate; VS Code can ad
 
 ## Publishing
 
-1. Build release binaries in CI for all target triples
-2. `cd editors/vscode && npx vsce package`
-3. Publish with `vsce publish` (requires Marketplace publisher token)
+### One-time Marketplace setup
+
+1. Create a [Visual Studio Marketplace publisher](https://marketplace.visualstudio.com/manage) (this repo uses publisher id `amirhosseindavoody`).
+2. Create a [Personal Access Token](https://dev.azure.com/) with **Marketplace > Manage** scope.
+3. Add the token as repository secret **`VSCE_PAT`** in GitHub → Settings → Secrets.
+
+### Release from CI
+
+Push a tag to publish (builds all platform binaries, packages VSIX, publishes):
+
+```bash
+git tag vscode-v0.2.0
+git push origin vscode-v0.2.0
+```
+
+Or run **Release VS Code extension** manually from the Actions tab. Enable **Publish to VS Code Marketplace** to call `vsce publish` (requires `VSCE_PAT`).
+
+The workflow always uploads the `.vsix` as an Actions artifact even when publish is skipped.
+
+### Release manually
+
+```bash
+pixi run build
+pixi run ext-package
+cd editors/vscode
+npx vsce publish --no-dependencies   # requires VSCE_PAT in the environment
+```
 
 Pre-publish checklist:
 
-- [ ] `README.md` with demo GIF or screenshot
-- [ ] `LICENSE` aligned with repo
-- [ ] Server binary strategy documented for users
+- [ ] `README.md` describes bundled-binary behavior for end users
+- [ ] `LICENSE` aligned with repo (`MIT` in `package.json`)
+- [ ] Extension version bumped in `editors/vscode/package.json`
 - [ ] `engines.vscode` set to tested minimum version
+- [ ] `VSCE_PAT` secret configured for CI publish
 
 ## Troubleshooting
 
