@@ -54,13 +54,73 @@ The formatting engine processes netlist files to enforce consistent layouts:
 
 ---
 
-## 4. System Architecture & Implementation
+## 4. MVP Strategy (Ship Before Full Feature Set)
 
-### 4.1 Implementation Language
+The full capability list in sections 2–3 is the **north star**. The first deliverable is a narrow **MVP** that proves the pipeline in VS Code before investing in navigation, completion, or formatting.
+
+### 4.0.1 MVP definition
+
+**In scope:**
+
+- Rust workspace: `spice-parser` + `spice-lsp` binary
+- Tree-sitter grammar for a **single dialect** (Ngspice first)
+- Syntax diagnostics only (parse errors, unclosed `.subckt`)
+- LSP: `initialize`, text document sync, `publishDiagnostics`
+- VS Code extension that spawns the binary over stdio
+
+**Out of scope for MVP:**
+
+- Formatter, completion, hover, go-to-definition, references
+- Semantic analysis (duplicate names, undefined models)
+- Multi-dialect and `.include` resolution
+
+### 4.0.2 MVP milestones
+
+| # | Milestone | Verification |
+|---|-----------|--------------|
+| M1 | Cargo workspace + pixi tasks | `pixi run cargo build` |
+| M2 | Minimal Tree-sitter grammar | Corpus / fixture parse tests |
+| M3 | Parser → diagnostics API | `pixi run cargo test -p spice-parser` |
+| M4 | tower-lsp stdio server | LSP integration test |
+| M5 | `test-data/` fixtures | CI green on `pixi run test` |
+| M6 | VS Code extension | F5 → squiggles on invalid netlist |
+| M7 | Documented demo script | [Demo and testing](../development/3_demo-and-test.md) |
+
+Detailed steps: [MVP guide](../development/2_mvp.md).
+
+### 4.0.3 Demo and test strategy
+
+| Layer | Method |
+|-------|--------|
+| Grammar | Tree-sitter corpus + Rust fixture tests |
+| Parser | Golden diagnostics on `test-data/invalid/*` |
+| LSP | JSON-RPC harness over stdio (subprocess or mock client) |
+| VS Code | Extension Development Host (F5), Problems panel |
+| CI | `pixi install && pixi run test` on every push |
+
+Manual smoke: open `test-data/invalid/unclosed-subckt.cir`, fix `.ends`, confirm diagnostic clears.
+
+### 4.0.4 VS Code as primary client
+
+Distribution path:
+
+1. **Development:** `spiceLsp.serverPath` points at `target/debug/spice-lsp`
+2. **Early adopters:** side-load `.vsix` built with `vsce package`
+3. **General availability:** Marketplace publish with platform-specific binary download or bundle
+
+Extension architecture (thin Node client, Rust server): [VS Code integration](../development/4_vscode-integration.md).
+
+Post-MVP features roll out in phases documented in [Architecture](../4_architecture.md) and [LSP features](../5_lsp-features.md).
+
+---
+
+## 5. System Architecture & Implementation
+
+### 5.1 Implementation Language
 
 The LSP and formatter will be implemented in **Rust** to satisfy the low-latency and performance requirements (<100ms on 50k lines) while guaranteeing thread safety and memory efficiency without a garbage collector.
 
-### 4.2 Architecture & Design
+### 5.2 Architecture & Design
 
 The system uses a classic compiler frontend architecture integrated into an event-driven JSON-RPC server:
 
@@ -87,7 +147,7 @@ The system uses a classic compiler frontend architecture integrated into an even
 - **Incremental Parsing:** Tree-sitter maintains an active syntax tree in memory. On document edits, only modified ranges are re-parsed, keeping latency negligible.
 - **Formatting Pipeline:** The formatter reads the CST, applies structural rules (such as aligning nodes and standardizing `+` continuation lines), and outputs a unified set of `TextEdit` actions.
 
-### 4.3 Key Dependencies
+### 5.3 Key Dependencies
 
 - **`tower-lsp`**: High-level LSP implementation framework for Rust built on Tokio.
 - **`tree-sitter`**: Rust bindings to the incremental parsing library.

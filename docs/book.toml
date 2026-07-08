@@ -1,0 +1,14 @@
+[book]
+title = "spice-lsp"
+authors = ["Amirhossein Davoody"]
+description = "Language server and formatter for SPICE netlists"
+language = "en"
+src = "."
+
+[output.html]
+default-theme = "rust"
+preferred-dark-theme = "ayu"
+git-repository-url = "https://github.com/amirhosseindavoody/spice-lsp"
+
+[output.html.playground]
+copyable = true
