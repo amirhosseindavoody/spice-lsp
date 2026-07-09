@@ -3,5 +3,6 @@
     "lineComment": "*"
   },
   "brackets": [["(", ")"]],
-  "autoClosingPairs": [{ "open": "(", "close": ")" }]
+  "autoClosingPairs": [{ "open": "(", "close": ")" }],
+  "surroundingPairs": [{ "open": "(", "close": ")" }]
 }

@@ -5,7 +5,7 @@ Language support for [SPICE](https://en.wikipedia.org/wiki/SPICE) circuit simula
 ## Quick start
 
 1. **Install** this extension from the Marketplace (no separate language-server install).
-2. **Open a netlist** — any `.cir`, `.sp`, `.net`, or `.ckt` file. VS Code should show the language mode **SPICE** in the status bar.
+2. **Open a netlist** — any `.cir`, `.sp`, `.spf`, `.net`, or `.ckt` file. VS Code should show the language mode **SPICE** in the status bar.
 3. **Watch the Problems panel** (`View → Problems`) for syntax errors and semantic warnings as you type — for example an unclosed `.subckt`, a duplicate instance name, or a reference to an undefined model.
 4. **Use the outline** (`View → Outline`, or Explorer → Outline) to jump between `.subckt`, `.model`, `.param`, and instances.
 5. **Navigate** with **Go to Definition** (`F12`) on a subcircuit or model name, and **Find All References** (`Shift+F12`) to list every use.
@@ -16,13 +16,14 @@ If nothing happens after opening a file, check **Output → SPICE Language Serve
 
 ## Features
 
+- **Syntax highlighting** — comments (`*` / `;` / `$`), directives, instances, and numbers
 - **Syntax diagnostics** — unclosed `.subckt` blocks, parse errors, and related issues
 - **Semantic warnings** — duplicate component names, undefined model/subcircuit references
 - **Document outline** — hierarchical view of subcircuits, models, parameters, and instances
 - **Go to definition** — jump from subcircuit references to `.subckt` definitions
 - **Find references** — list all usages of a subcircuit, model, or parameter
 
-Supported file extensions: `.cir`, `.sp`, `.net`, `.ckt`.
+Supported file extensions: `.cir`, `.sp`, `.spf`, `.net`, `.ckt`. Toggle Comment uses `*` (VS Code allows one line-comment marker); `;` and `$` still highlight as comments.
 
 ## Bundled platforms
 

@@ -80,7 +80,13 @@ pub fn definition_location(uri: &Url, source: &str, index: &Index, offset: usize
     Some(location(uri, source, span))
 }
 
-pub fn reference_locations(uri: &Url, source: &str, index: &Index, offset: usize) -> Vec<Location> {
+pub fn reference_locations(
+    uri: &Url,
+    source: &str,
+    index: &Index,
+    offset: usize,
+    include_declaration: bool,
+) -> Vec<Location> {
     let Some(symbol) = index.symbol_at_offset(offset) else {
         return Vec::new();
     };
@@ -88,8 +94,10 @@ pub fn reference_locations(uri: &Url, source: &str, index: &Index, offset: usize
     let kinds = reference_kinds(symbol.kind);
     let mut spans = Vec::new();
     for kind in kinds {
-        if let Some(def) = index.definition_span(*kind, &symbol.name) {
-            spans.push(def);
+        if include_declaration {
+            if let Some(def) = index.definition_span(*kind, &symbol.name) {
+                spans.push(def);
+            }
         }
         spans.extend_from_slice(index.reference_spans(*kind, &symbol.name));
     }
@@ -175,6 +183,14 @@ fn utf16_len(text: &str) -> u32 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::path::PathBuf;
+
+    fn fixture(name: &str) -> String {
+        let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../../test-data")
+            .join(name);
+        std::fs::read_to_string(root).expect("fixture exists")
+    }
 
     #[test]
     fn ascii_byte_offset_maps_to_position() {
@@ -182,5 +198,23 @@ mod tests {
         let range = span_to_range(source, Span { start: 0, end: 2 });
         assert_eq!(range.start, Position::new(0, 0));
         assert_eq!(range.end, Position::new(0, 2));
+    }
+
+    #[test]
+    fn references_include_declaration_when_requested() {
+        let source = fixture("valid/subckt.cir");
+        let result = spice_parser::analyze(&source);
+        let def = result
+            .index
+            .definition_span(SymbolKind::Subckt, "buffer")
+            .expect("buffer definition");
+        let uri = Url::parse("file:///test/subckt.cir").unwrap();
+
+        let with_decl = reference_locations(&uri, &source, &result.index, def.start, true);
+        let without_decl = reference_locations(&uri, &source, &result.index, def.start, false);
+
+        assert!(with_decl.len() >= 2);
+        assert_eq!(without_decl.len(), with_decl.len() - 1);
+        assert!(without_decl.iter().all(|loc| loc.range.start.line != 1));
     }
 }

@@ -59,7 +59,7 @@ Example language contribution:
   "languages": [{
     "id": "spice",
     "aliases": ["SPICE", "spice"],
-    "extensions": [".cir", ".sp", ".net", ".ckt"],
+    "extensions": [".cir", ".sp", ".spf", ".net", ".ckt"],
     "configuration": "./language-configuration.json"
   }]
 }
@@ -81,7 +81,7 @@ Teach VS Code comment syntax and line continuation behavior:
 }
 ```
 
-Note: SPICE also uses `;` and `$` comments — full support may require a TextMate grammar (`syntaxes/spice.tmLanguage.json`) for highlighting. MVP can ship with basic `*` comments; Tree-sitter `highlights.scm` can back semantic tokens later.
+Comment toggle uses `*` (`language-configuration.json` allows only one `lineComment`). `;` and `$` comments are highlighted by the TextMate grammar (`syntaxes/spice.tmLanguage.json`). Tree-sitter `highlights.scm` can back semantic tokens later.
 
 ## extension.ts
 
@@ -107,7 +107,7 @@ async function startClient(serverPath: string) {
   const clientOptions: LanguageClientOptions = {
     documentSelector: [{ scheme: "file", language: "spice" }],
     synchronize: {
-      fileEvents: vscode.workspace.createFileSystemWatcher("**/*.{cir,sp,net,ckt}"),
+      fileEvents: vscode.workspace.createFileSystemWatcher("**/*.{cir,sp,spf,net,ckt}"),
     },
   };
   client = new LanguageClient("spiceLsp", "SPICE Language Server", serverOptions, clientOptions);
@@ -248,15 +248,15 @@ The [Release VS Code extension](../../.github/workflows/release-vscode.yml) work
 
 The Marketplace release uses **bundle in `.vsix`**.
 
-## TextMate grammar (optional for MVP)
+## TextMate grammar
 
-Syntax highlighting without semantic tokens:
+Syntax highlighting ships as:
 
 ```
 editors/vscode/syntaxes/spice.tmLanguage.json
 ```
 
-Register in `package.json`:
+Registered in `package.json`:
 
 ```json
 "grammars": [{
@@ -266,7 +266,9 @@ Register in `package.json`:
 }]
 ```
 
-Tree-sitter-based highlighting via `nvim-treesitter` is separate; VS Code can adopt semantic tokens when the LSP advertises `semanticTokensProvider` (future).
+The grammar colors `*` / `;` / `$` comments, `.` directives, instance lines, and numeric literals. Tree-sitter-based highlighting via `nvim-treesitter` is separate; VS Code can adopt semantic tokens when the LSP advertises `semanticTokensProvider` (future).
+
+Marketplace listing icon: `editors/vscode/media/icon.png` (`package.json` `"icon"` field).
 
 ## Publishing
 

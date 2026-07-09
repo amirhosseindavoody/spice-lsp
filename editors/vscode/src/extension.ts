@@ -121,7 +121,7 @@ function createClient(): LanguageClient {
     documentSelector: [{ scheme: "file", language: "spice" }],
     synchronize: {
       fileEvents: vscode.workspace.createFileSystemWatcher(
-        "**/*.{cir,sp,net,ckt}",
+        "**/*.{cir,sp,spf,net,ckt}",
       ),
     },
   };

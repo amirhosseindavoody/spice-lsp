@@ -27,6 +27,7 @@
     "lsp",
     "simulation"
   ],
+  "icon": "media/icon.png",
   "activationEvents": [
     "onLanguage:spice"
   ],
@@ -42,10 +43,18 @@
         "extensions": [
           ".cir",
           ".sp",
+          ".spf",
           ".net",
           ".ckt"
         ],
         "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "spice",
+        "scopeName": "source.spice",
+        "path": "./syntaxes/spice.tmLanguage.json"
       }
     ],
     "configuration": {

@@ -305,6 +305,32 @@ async fn references_on_subckt_definition() {
         locations.len() >= 2,
         "expected definition + usage references, got {locations:?}"
     );
+
+    server
+        .send(json!({
+            "jsonrpc": "2.0",
+            "id": 5,
+            "method": "textDocument/references",
+            "params": {
+                "textDocument": { "uri": uri },
+                "position": { "line": line, "character": character },
+                "context": { "includeDeclaration": false }
+            }
+        }))
+        .await;
+    let response = server.read_response(5).await;
+    let without_decl = response["result"].as_array().expect("references");
+    assert_eq!(
+        without_decl.len(),
+        locations.len() - 1,
+        "includeDeclaration:false should omit the definition site"
+    );
+    assert!(
+        without_decl
+            .iter()
+            .all(|loc| loc["range"]["start"]["line"] != 1),
+        "definition line must be excluded when includeDeclaration is false: {without_decl:?}"
+    );
     server.shutdown().await;
 }
 
@@ -388,6 +414,46 @@ async fn valid_netlist_publishes_no_diagnostics() {
             .is_empty()
     );
     server.shutdown().await;
+}
+
+#[tokio::test]
+async fn sp_and_spf_uris_publish_diagnostics() {
+    // Extension maps .sp / .spf → language id `spice`; the server is URI-agnostic.
+    for (uri, fixture_name) in [
+        ("file:///test/simple-rc.sp", "valid/simple-rc.sp"),
+        ("file:///test/simple-rc.spf", "valid/simple-rc.spf"),
+    ] {
+        let source = fixture(fixture_name);
+        let mut server = LspProcess::spawn().await;
+        handshake(&mut server).await;
+        server
+            .send(json!({
+                "jsonrpc": "2.0",
+                "method": "textDocument/didOpen",
+                "params": {
+                    "textDocument": {
+                        "uri": uri,
+                        "languageId": "spice",
+                        "version": 1,
+                        "text": source
+                    }
+                }
+            }))
+            .await;
+
+        let notification = server
+            .read_notification("textDocument/publishDiagnostics")
+            .await;
+        assert_eq!(notification["params"]["uri"], uri);
+        assert!(
+            notification["params"]["diagnostics"]
+                .as_array()
+                .unwrap()
+                .is_empty(),
+            "expected no diagnostics for {uri}"
+        );
+        server.shutdown().await;
+    }
 }
 
 #[tokio::test]

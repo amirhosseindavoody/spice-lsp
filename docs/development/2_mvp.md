@@ -199,7 +199,7 @@ editors/vscode/
   "contributes": {
     "languages": [{
       "id": "spice",
-      "extensions": [".cir", ".sp", ".net", ".ckt"]
+      "extensions": [".cir", ".sp", ".spf", ".net", ".ckt"]
     }],
     "configuration": {
       "properties": {
