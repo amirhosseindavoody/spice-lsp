@@ -1,0 +1,17 @@
+{
+  "id": "hspice.directive.ac",
+  "kind": "directive",
+  "name": ".ac",
+  "summary": "AC frequency analysis (HSPICE)",
+  "syntax": ".AC type np fstart fstop\n.AC type np fstart fstop SWEEP var type2 np2 start stop\n.AC DATA=datanm",
+  "parameters": [
+    { "name": "type", "description": "LIN, DEC, or OCT frequency spacing." },
+    { "name": "np", "description": "Points (LIN) or points per decade/octave." },
+    { "name": "fstart / fstop", "description": "Frequency range.", "units": "Hz" },
+    { "name": "SWEEP …", "description": "Optional nested parameter/source sweep." },
+    { "name": "DATA=datanm", "description": "Data-driven AC analysis." }
+  ],
+  "examples": [".AC DEC 10 1 1G", ".AC LIN 50 1k 100Meg", ".AC DATA=ac_corners"],
+  "seeAlso": ["hspice.directive.data", "hspice.directive.noise"],
+  "dialectNotes": "HSPICE adds nested SWEEP and DATA= forms on top of classic LIN/DEC/OCT."
+}

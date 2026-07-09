@@ -1,0 +1,11 @@
+{
+  "id": "shared.directive.ic",
+  "kind": "directive",
+  "name": ".ic",
+  "summary": "Set initial node voltages",
+  "syntax": ".ic V(node)=value [V(node2)=value2 ...]",
+  "parameters": [
+    { "name": "V(node)", "description": "Node voltage to initialize.", "units": "V" }
+  ],
+  "examples": [".ic V(out)=0", ".ic V(in)=1.8 V(out)=0"]
+}

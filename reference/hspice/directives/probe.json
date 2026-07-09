@@ -1,0 +1,14 @@
+{
+  "id": "hspice.directive.probe",
+  "kind": "directive",
+  "name": ".probe",
+  "summary": "Select waveforms saved for post-processing (HSPICE)",
+  "syntax": ".PROBE {DC|TRAN|AC} ov1 [ov2 ...]",
+  "parameters": [
+    { "name": "DC|TRAN|AC", "description": "Analysis type." },
+    { "name": "ov", "description": "Output variable to save (node voltage, branch current, etc.)." }
+  ],
+  "examples": [".PROBE TRAN V(out) V(in) I(Vdd)", ".PROBE AC VM(out) VP(out)"],
+  "seeAlso": ["hspice.directive.print", "hspice.directive.option"],
+  "dialectNotes": "Pair with .OPTION POST=… . With .OPTION PROBE, only .PROBE/.PRINT/.PLOT variables are written, shrinking waveform files."
+}

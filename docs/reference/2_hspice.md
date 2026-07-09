@@ -9,17 +9,176 @@ Source of truth: JSON under [`reference/`](../../reference/). Hover in the edito
 
 | Name | Kind | Summary | Source |
 |------|------|---------|--------|
+| [`.ac`](#ac) | directive | AC frequency analysis (HSPICE) | dialect |
+| [`.alter`](#alter) | directive | Rerun simulation with alternate parameters or analyses (HSPICE) | dialect |
+| [`.data`](#data) | directive | Define a named data table for data-driven sweeps (HSPICE) | dialect |
+| [`.dc`](#dc) | directive | DC analysis and sweeps (HSPICE) | dialect |
+| [`.end`](#end) | directive | Terminate the netlist (HSPICE) | dialect |
 | [`.ends`](#ends) | directive | End a subcircuit definition | shared |
+| [`.ic`](#ic) | directive | Force initial node voltages (HSPICE) | dialect |
+| [`.include`](#include) | directive | Include an external file (HSPICE) | dialect |
+| [`.lib`](#lib) | directive | Call a named library section (HSPICE) | dialect |
+| [`.measure`](#measure) | directive | Measure delay, rise/fall, extrema, and other results (HSPICE) | dialect |
 | [`.model`](#model) | directive | Define a device model | shared |
+| [`.nodeset`](#nodeset) | directive | Suggest initial guesses for DC convergence (HSPICE) | dialect |
+| [`.noise`](#noise) | directive | Noise analysis paired with .AC (HSPICE) | dialect |
+| [`.op`](#op) | directive | DC operating-point report (HSPICE) | dialect |
 | [`.option`](#option) | directive | Set HSPICE simulation options | dialect |
-| [`.param`](#param) | directive | Define a named parameter | shared |
+| [`.param`](#param) | directive | Define parameters and expressions (HSPICE) | dialect |
+| [`.print`](#print) | directive | Print tabulated analysis results (HSPICE) | dialect |
+| [`.probe`](#probe) | directive | Select waveforms saved for post-processing (HSPICE) | dialect |
 | [`.subckt`](#subckt) | directive | Begin a subcircuit definition | shared |
+| [`.temp`](#temp) | directive | Set simulation temperature(s) (HSPICE) | dialect |
+| [`.tf`](#tf) | directive | DC small-signal transfer function (HSPICE) | dialect |
 | [`.tran`](#tran) | directive | Transient analysis (HSPICE) | dialect |
 | [`C`](#c) | element | Capacitor | shared |
 | [`R`](#r) | element | Resistor | shared |
 | [`X`](#x) | element | Subcircuit instance | shared |
 
 ## Directives
+
+### .ac
+
+**hspice.directive.ac** — AC frequency analysis (HSPICE)
+
+_Dialect overlay (replaces shared entry with the same name)._
+
+```
+.AC type np fstart fstop
+.AC type np fstart fstop SWEEP var type2 np2 start stop
+.AC DATA=datanm
+```
+
+| Parameter | Description | Units |
+|-----------|-------------|-------|
+| `type` | LIN, DEC, or OCT frequency spacing. |  |
+| `np` | Points (LIN) or points per decade/octave. |  |
+| `fstart / fstop` | Frequency range. | Hz |
+| `SWEEP …` | Optional nested parameter/source sweep. |  |
+| `DATA=datanm` | Data-driven AC analysis. |  |
+
+**Examples**
+
+- `.AC DEC 10 1 1G`
+- `.AC LIN 50 1k 100Meg`
+- `.AC DATA=ac_corners`
+
+_HSPICE adds nested SWEEP and DATA= forms on top of classic LIN/DEC/OCT._
+
+**See also:** `hspice.directive.data`, `hspice.directive.noise`
+
+### .alter
+
+**hspice.directive.alter** — Rerun simulation with alternate parameters or analyses (HSPICE)
+
+_Dialect overlay (replaces shared entry with the same name)._
+
+```
+.ALTER [title_string]
+```
+
+| Parameter | Description | Units |
+|-----------|-------------|-------|
+| `title_string` | Optional title for this alter case. |  |
+
+**Examples**
+
+- `.ALTER slow_corner
+.TEMP 125
+.LIB 'models.lib' SS`
+
+_An .ALTER block may contain elements and many control statements (.PARAM, .LIB, .DATA, .DC, .TRAN, .OP, …). Analysis types already used in the main deck have restrictions—see the HSPICE user guide._
+
+**See also:** `hspice.directive.data`, `hspice.directive.lib`, `hspice.directive.param`
+
+### .data
+
+**hspice.directive.data** — Define a named data table for data-driven sweeps (HSPICE)
+
+_Dialect overlay (replaces shared entry with the same name)._
+
+```
+.DATA datanm pnam1 [pnam2 ...]
++ pval1 [pval2 ...]
++ ...
+.ENDDATA
+```
+
+| Parameter | Description | Units |
+|-----------|-------------|-------|
+| `datanm` | Data-block name referenced by DATA=datanm on .DC / .AC / .TRAN. |  |
+| `pnam` | Parameter column name (must be declared with .PARAM). |  |
+| `pval` | Row of values; column count matches the parameter list. |  |
+
+**Examples**
+
+- `.DATA load_sweep rload
++ 1k
++ 10k
++ 100k
+.ENDDATA`
+- `.DC DATA=load_sweep`
+
+_HSPICE supports inline .DATA … .ENDDATA blocks and external/MER file forms. Analysis statements select a block with DATA=datanm (optionally DATA=datanm(Nums))._
+
+**See also:** `hspice.directive.dc`, `shared.directive.param`, `hspice.directive.tran`
+
+### .dc
+
+**hspice.directive.dc** — DC analysis and sweeps (HSPICE)
+
+_Dialect overlay (replaces shared entry with the same name)._
+
+```
+.DC var1 start1 stop1 incr1
+.DC var1 START=start1 STOP=stop1 STEP=incr1
+.DC var1 start1 stop1 incr1 [SWEEP] var2 start2 stop2 incr2
+.DC var1 type np start1 stop1
+.DC DATA=datanm
+.DC MONTE=val
+```
+
+| Parameter | Description | Units |
+|-----------|-------------|-------|
+| `var1` | Primary sweep variable: independent source, element/model parameter, or TEMP. |  |
+| `start1 / stop1 / incr1` | Linear sweep bounds and step (positional or START=/STOP=/STEP=). |  |
+| `type np` | LIN\|DEC\|OCT with point count for parameterized / nested sweeps. |  |
+| `SWEEP var2 …` | Optional nested (second) sweep over another source or parameter. |  |
+| `DATA=datanm` | Data-driven sweep using a .DATA block. |  |
+| `MONTE=val` | Monte Carlo DC analysis. |  |
+
+**Examples**
+
+- `.DC Vgs 0 1.8 0.1`
+- `.DC Vds 0 1.8 0.05 SWEEP Vgs 0 1.8 0.3`
+- `.DC TEMP START=0 STOP=100 STEP=25`
+- `.DC DATA=corner_table`
+- `.DC MONTE=100`
+
+_HSPICE extends classic SPICE .DC with keyword START/STOP/STEP, nested SWEEP, DATA= tables, and MONTE=. Prefer DATA= for multi-parameter corner tables._
+
+**See also:** `hspice.directive.data`, `shared.directive.op`, `hspice.directive.print`
+
+### .end
+
+**hspice.directive.end** — Terminate the netlist (HSPICE)
+
+_Dialect overlay (replaces shared entry with the same name)._
+
+```
+.END [comment]
+```
+
+| Parameter | Description | Units |
+|-----------|-------------|-------|
+| `comment` | Optional comment, often the deck name. |  |
+
+**Examples**
+
+- `.END`
+- `.END inverter_tb`
+
+_Also closes any open .ALTER sequences. Statements after .END are ignored._
 
 ### .ends
 
@@ -40,6 +199,103 @@ Source of truth: JSON under [`reference/`](../../reference/). Hover in the edito
 
 **See also:** `shared.directive.subckt`
 
+### .ic
+
+**hspice.directive.ic** — Force initial node voltages (HSPICE)
+
+_Dialect overlay (replaces shared entry with the same name)._
+
+```
+.IC V(node)=value [V(node2)=value2 ...]
+```
+
+| Parameter | Description | Units |
+|-----------|-------------|-------|
+| `V(node)` | Node (or hierarchical path) to initialize. | V |
+
+**Examples**
+
+- `.IC V(out)=0`
+- `.IC V(clk)=0 V(data)=1.8`
+
+_Also accepted as .DCVOLT. Used with .TRAN … UIC to skip the quiescent OP and start from these voltages._
+
+**See also:** `hspice.directive.nodeset`, `hspice.directive.tran`
+
+### .include
+
+**hspice.directive.include** — Include an external file (HSPICE)
+
+_Dialect overlay (replaces shared entry with the same name)._
+
+```
+.INCLUDE 'filename'
+```
+
+| Parameter | Description | Units |
+|-----------|-------------|-------|
+| `filename` | File path to insert (quotes recommended). |  |
+
+**Examples**
+
+- `.INCLUDE 'models/nmos.inc'`
+- `.INC '../stimuli/clock.sp'`
+
+_Also accepted as .INC. Prefer .LIB when selecting a named section from a library file._
+
+**See also:** `hspice.directive.lib`
+
+### .lib
+
+**hspice.directive.lib** — Call a named library section (HSPICE)
+
+_Dialect overlay (replaces shared entry with the same name)._
+
+```
+.LIB 'filename' entryname
+```
+
+| Parameter | Description | Units |
+|-----------|-------------|-------|
+| `filename` | Library file path. |  |
+| `entryname` | Section name inside the library (.LIB entry … .ENDL). |  |
+
+**Examples**
+
+- `.LIB 'models.lib' TT`
+- `.LIB '/pdk/hspice/models' FF`
+
+_Library files define sections with .LIB entryname … .ENDL entryname. Nested .LIB calls are supported up to a limited depth._
+
+**See also:** `hspice.directive.include`, `shared.directive.model`
+
+### .measure
+
+**hspice.directive.measure** — Measure delay, rise/fall, extrema, and other results (HSPICE)
+
+_Dialect overlay (replaces shared entry with the same name)._
+
+```
+.MEASURE {TRAN|DC|AC} name TRIG … TARG …
+.MEASURE {TRAN|DC|AC} name MAX|MIN|PP|AVG|RMS|INTEG …
+```
+
+| Parameter | Description | Units |
+|-----------|-------------|-------|
+| `TRAN|DC|AC` | Analysis type the measurement applies to. |  |
+| `name` | Measurement result name written to the measure output. |  |
+| `TRIG / TARG` | Trigger and target conditions (VAL=, RISE=/FALL=/CROSS=). |  |
+
+**Examples**
+
+- `.MEASURE TRAN trise TRIG V(out) VAL=0.1*vdd RISE=1 TARG V(out) VAL=0.9*vdd RISE=1`
+- `.MEASURE TRAN tpd TRIG V(in) VAL=0.5 RISE=1 TARG V(out) VAL=0.5 RISE=1`
+- `.MEASURE TRAN vmax MAX V(out)`
+
+_Also accepted as .MEAS. Many measure forms exist (FIND/WHEN, PARAM, DERIV, etc.); TRIG/TARG and MAX/MIN cover the most common timing and peak checks._
+
+**See also:** `hspice.directive.tran`, `hspice.directive.print`, `hspice.directive.probe`
+
 ### .model
 
 **shared.directive.model** — Define a device model
@@ -56,6 +312,79 @@ Source of truth: JSON under [`reference/`](../../reference/). Hover in the edito
 **Examples**
 
 - `.model nmos NMOS (VTO=0.7)`
+
+### .nodeset
+
+**hspice.directive.nodeset** — Suggest initial guesses for DC convergence (HSPICE)
+
+_Dialect overlay (replaces shared entry with the same name)._
+
+```
+.NODESET V(node)=value [V(node2)=value2 ...]
+```
+
+| Parameter | Description | Units |
+|-----------|-------------|-------|
+| `V(node)` | Node voltage guess for the DC solution. | V |
+
+**Examples**
+
+- `.NODESET V(out)=0.9`
+- `.NODESET V(n1)=0 V(n2)=1.8`
+
+_Unlike .IC, .NODESET is a soft hint for finding the operating point, not a hard initial condition for transient UIC._
+
+**See also:** `hspice.directive.ic`, `hspice.directive.op`
+
+### .noise
+
+**hspice.directive.noise** — Noise analysis paired with .AC (HSPICE)
+
+_Dialect overlay (replaces shared entry with the same name)._
+
+```
+.NOISE outvar srcnam [interval]
+```
+
+| Parameter | Description | Units |
+|-----------|-------------|-------|
+| `outvar` | Output voltage node or pair, e.g. V(out) or V(out,ref). |  |
+| `srcnam` | Independent source treated as the noise input reference. |  |
+| `interval` | Optional print interval for intermediate noise summaries. |  |
+
+**Examples**
+
+- `.NOISE V(out) Vin`
+- `.NOISE V(out,0) Vin 10`
+
+_Requires a companion .AC statement. Reports total output noise and equivalent input noise._
+
+**See also:** `hspice.directive.ac`
+
+### .op
+
+**hspice.directive.op** — DC operating-point report (HSPICE)
+
+_Dialect overlay (replaces shared entry with the same name)._
+
+```
+.OP [format [time ...]]
+```
+
+| Parameter | Description | Units |
+|-----------|-------------|-------|
+| `format` | Optional report style: ALL, BRIEF, CURRENT, DEBUG, NONE, VOLTAGE. |  |
+| `time` | Optional time(s) for reporting during transient (with ALL/VOLTAGE/CURRENT/DEBUG). | s |
+
+**Examples**
+
+- `.OP`
+- `.OP BRIEF`
+- `.OP ALL 10n`
+
+_HSPICE often prints bias automatically with other analyses; use .OP when you only need the operating point, or to request a formatted report at specific times._
+
+**See also:** `hspice.directive.dc`, `hspice.directive.ic`, `hspice.directive.nodeset`
 
 ### .option
 
@@ -80,21 +409,74 @@ _Option keywords differ across simulators; this entry covers the `.option` form.
 
 ### .param
 
-**shared.directive.param** — Define a named parameter
+**hspice.directive.param** — Define parameters and expressions (HSPICE)
+
+_Dialect overlay (replaces shared entry with the same name)._
 
 ```
-.param name=value [name2=value2 ...]
+.PARAM name=value [name2=value2 ...]
 ```
 
 | Parameter | Description | Units |
 |-----------|-------------|-------|
 | `name` | Parameter identifier. |  |
-| `value` | Numeric value or expression. |  |
+| `value` | Number, 'algebraic expression', distribution function, or str('…'). |  |
 
 **Examples**
 
-- `.param rload=1k`
-- `.param pi=3.14159`
+- `.PARAM vdd=1.8 rload=10k`
+- `.PARAM cload='2*cunit'`
+- `.PARAM tox=agauss(3n,0.1n,3)`
+
+_HSPICE allows quoted expressions and statistical distributions (GAUSS/AGAUSS/…) used with Monte Carlo. Parameters referenced by .DATA columns must be declared here._
+
+**See also:** `hspice.directive.data`, `hspice.directive.alter`
+
+### .print
+
+**hspice.directive.print** — Print tabulated analysis results (HSPICE)
+
+_Dialect overlay (replaces shared entry with the same name)._
+
+```
+.PRINT {DC|TRAN|AC} ov1 [ov2 ...]
+```
+
+| Parameter | Description | Units |
+|-----------|-------------|-------|
+| `DC|TRAN|AC` | Analysis type. |  |
+| `ov` | Output variable; AC forms include VM/VP/VR/VI/VDB. |  |
+
+**Examples**
+
+- `.PRINT TRAN V(out) I(Vdd)`
+- `.PRINT AC VM(out) VDB(out) VP(out)`
+
+**See also:** `hspice.directive.probe`, `hspice.directive.measure`
+
+### .probe
+
+**hspice.directive.probe** — Select waveforms saved for post-processing (HSPICE)
+
+_Dialect overlay (replaces shared entry with the same name)._
+
+```
+.PROBE {DC|TRAN|AC} ov1 [ov2 ...]
+```
+
+| Parameter | Description | Units |
+|-----------|-------------|-------|
+| `DC|TRAN|AC` | Analysis type. |  |
+| `ov` | Output variable to save (node voltage, branch current, etc.). |  |
+
+**Examples**
+
+- `.PROBE TRAN V(out) V(in) I(Vdd)`
+- `.PROBE AC VM(out) VP(out)`
+
+_Pair with .OPTION POST=… . With .OPTION PROBE, only .PROBE/.PRINT/.PLOT variables are written, shrinking waveform files._
+
+**See also:** `hspice.directive.print`, `hspice.directive.option`
 
 ### .subckt
 
@@ -115,6 +497,53 @@ _Option keywords differ across simulators; this entry covers the `.option` form.
 - `.subckt inv in out`
 
 **See also:** `shared.directive.ends`
+
+### .temp
+
+**hspice.directive.temp** — Set simulation temperature(s) (HSPICE)
+
+_Dialect overlay (replaces shared entry with the same name)._
+
+```
+.TEMP t1 [t2 ...]
+```
+
+| Parameter | Description | Units |
+|-----------|-------------|-------|
+| `t1` | Temperature in Celsius; multiple values run multi-temperature analysis. | °C |
+
+**Examples**
+
+- `.TEMP 25`
+- `.TEMP -40 25 125`
+
+_TEMP can also be the sweep variable on .DC / nested SWEEP._
+
+**See also:** `hspice.directive.dc`, `hspice.directive.option`
+
+### .tf
+
+**hspice.directive.tf** — DC small-signal transfer function (HSPICE)
+
+_Dialect overlay (replaces shared entry with the same name)._
+
+```
+.TF outvar srcnam
+```
+
+| Parameter | Description | Units |
+|-----------|-------------|-------|
+| `outvar` | Output variable, e.g. V(out) or I(Vload). |  |
+| `srcnam` | Independent input source name. |  |
+
+**Examples**
+
+- `.TF V(out) Vin`
+- `.TF I(Vmeas) Iin`
+
+_Reports transfer gain plus small-signal input and output resistances._
+
+**See also:** `hspice.directive.op`, `hspice.directive.dc`
 
 ### .tran
 

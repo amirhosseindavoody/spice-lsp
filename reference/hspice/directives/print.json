@@ -1,0 +1,13 @@
+{
+  "id": "hspice.directive.print",
+  "kind": "directive",
+  "name": ".print",
+  "summary": "Print tabulated analysis results (HSPICE)",
+  "syntax": ".PRINT {DC|TRAN|AC} ov1 [ov2 ...]",
+  "parameters": [
+    { "name": "DC|TRAN|AC", "description": "Analysis type." },
+    { "name": "ov", "description": "Output variable; AC forms include VM/VP/VR/VI/VDB." }
+  ],
+  "examples": [".PRINT TRAN V(out) I(Vdd)", ".PRINT AC VM(out) VDB(out) VP(out)"],
+  "seeAlso": ["hspice.directive.probe", "hspice.directive.measure"]
+}

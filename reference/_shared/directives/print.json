@@ -1,0 +1,12 @@
+{
+  "id": "shared.directive.print",
+  "kind": "directive",
+  "name": ".print",
+  "summary": "Print analysis results as a table",
+  "syntax": ".print {DC|TRAN|AC} ov1 [ov2 ...]",
+  "parameters": [
+    { "name": "DC|TRAN|AC", "description": "Analysis type whose results to print." },
+    { "name": "ov", "description": "Output variable, e.g. V(node), I(Vsrc), VM(node)." }
+  ],
+  "examples": [".print TRAN V(out) I(Vdd)", ".print DC V(2) V(3)"]
+}

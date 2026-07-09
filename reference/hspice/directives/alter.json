@@ -1,0 +1,13 @@
+{
+  "id": "hspice.directive.alter",
+  "kind": "directive",
+  "name": ".alter",
+  "summary": "Rerun simulation with alternate parameters or analyses (HSPICE)",
+  "syntax": ".ALTER [title_string]",
+  "parameters": [
+    { "name": "title_string", "description": "Optional title for this alter case." }
+  ],
+  "examples": [".ALTER slow_corner\n.TEMP 125\n.LIB 'models.lib' SS"],
+  "seeAlso": ["hspice.directive.data", "hspice.directive.lib", "hspice.directive.param"],
+  "dialectNotes": "An .ALTER block may contain elements and many control statements (.PARAM, .LIB, .DATA, .DC, .TRAN, .OP, …). Analysis types already used in the main deck have restrictions—see the HSPICE user guide."
+}

@@ -256,4 +256,35 @@ mod tests {
             .expect("R");
         assert_eq!(entry.name, "R");
     }
+
+    #[test]
+    fn hspice_data_dc_op_from_corpus() {
+        let index = ReferenceIndex::load_embedded();
+        let data = index
+            .lookup(Dialect::Hspice, HoverKind::Directive, ".data")
+            .expect(".data");
+        assert_eq!(data.id, "hspice.directive.data");
+        assert!(data.syntax.contains(".ENDDATA"));
+
+        let dc = index
+            .lookup(Dialect::Hspice, HoverKind::Directive, ".dc")
+            .expect(".dc");
+        assert_eq!(dc.id, "hspice.directive.dc");
+        assert!(dc.summary.contains("HSPICE"));
+        assert!(dc.syntax.contains("DATA=") || dc.examples.iter().any(|e| e.contains("DATA=")));
+
+        let op = index
+            .lookup(Dialect::Hspice, HoverKind::Directive, ".op")
+            .expect(".op");
+        assert_eq!(op.id, "hspice.directive.op");
+    }
+
+    #[test]
+    fn ngspice_uses_shared_dc_not_hspice_overlay() {
+        let index = ReferenceIndex::load_embedded();
+        let dc = index
+            .lookup(Dialect::Ngspice, HoverKind::Directive, ".dc")
+            .expect("shared .dc");
+        assert_eq!(dc.id, "shared.directive.dc");
+    }
 }

@@ -1,0 +1,11 @@
+{
+  "id": "shared.directive.end",
+  "kind": "directive",
+  "name": ".end",
+  "summary": "End of netlist",
+  "syntax": ".end [comment]",
+  "parameters": [
+    { "name": "comment", "description": "Optional trailing comment." }
+  ],
+  "examples": [".end", ".end my_circuit"]
+}

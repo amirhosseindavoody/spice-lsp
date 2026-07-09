@@ -1,0 +1,19 @@
+{
+  "id": "hspice.directive.measure",
+  "kind": "directive",
+  "name": ".measure",
+  "summary": "Measure delay, rise/fall, extrema, and other results (HSPICE)",
+  "syntax": ".MEASURE {TRAN|DC|AC} name TRIG … TARG …\n.MEASURE {TRAN|DC|AC} name MAX|MIN|PP|AVG|RMS|INTEG …",
+  "parameters": [
+    { "name": "TRAN|DC|AC", "description": "Analysis type the measurement applies to." },
+    { "name": "name", "description": "Measurement result name written to the measure output." },
+    { "name": "TRIG / TARG", "description": "Trigger and target conditions (VAL=, RISE=/FALL=/CROSS=)." }
+  ],
+  "examples": [
+    ".MEASURE TRAN trise TRIG V(out) VAL=0.1*vdd RISE=1 TARG V(out) VAL=0.9*vdd RISE=1",
+    ".MEASURE TRAN tpd TRIG V(in) VAL=0.5 RISE=1 TARG V(out) VAL=0.5 RISE=1",
+    ".MEASURE TRAN vmax MAX V(out)"
+  ],
+  "seeAlso": ["hspice.directive.tran", "hspice.directive.print", "hspice.directive.probe"],
+  "dialectNotes": "Also accepted as .MEAS. Many measure forms exist (FIND/WHEN, PARAM, DERIV, etc.); TRIG/TARG and MAX/MIN cover the most common timing and peak checks."
+}

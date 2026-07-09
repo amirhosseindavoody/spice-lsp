@@ -9,16 +9,81 @@ Source of truth: JSON under [`reference/`](../../reference/). Hover in the edito
 
 | Name | Kind | Summary | Source |
 |------|------|---------|--------|
+| [`.ac`](#ac) | directive | Small-signal AC frequency analysis | shared |
+| [`.dc`](#dc) | directive | DC sweep analysis | shared |
+| [`.end`](#end) | directive | End of netlist | shared |
 | [`.ends`](#ends) | directive | End a subcircuit definition | shared |
+| [`.ic`](#ic) | directive | Set initial node voltages | shared |
+| [`.include`](#include) | directive | Include another netlist file | shared |
 | [`.model`](#model) | directive | Define a device model | shared |
+| [`.op`](#op) | directive | DC operating-point analysis | shared |
 | [`.param`](#param) | directive | Define a named parameter | shared |
+| [`.print`](#print) | directive | Print analysis results as a table | shared |
 | [`.subckt`](#subckt) | directive | Begin a subcircuit definition | shared |
+| [`.temp`](#temp) | directive | Set circuit temperature(s) | shared |
 | [`.tran`](#tran) | directive | Transient analysis (Ngspice) | dialect |
 | [`C`](#c) | element | Capacitor | shared |
 | [`R`](#r) | element | Resistor | shared |
 | [`X`](#x) | element | Subcircuit instance | shared |
 
 ## Directives
+
+### .ac
+
+**shared.directive.ac** — Small-signal AC frequency analysis
+
+```
+.ac {LIN|DEC|OCT} np fstart fstop
+```
+
+| Parameter | Description | Units |
+|-----------|-------------|-------|
+| `LIN|DEC|OCT` | Linear, decade, or octave frequency spacing. |  |
+| `np` | Number of points (LIN) or points per decade/octave (DEC/OCT). |  |
+| `fstart` | Start frequency. | Hz |
+| `fstop` | Stop frequency. | Hz |
+
+**Examples**
+
+- `.ac DEC 10 1k 1G`
+- `.ac LIN 100 1 1Meg`
+
+### .dc
+
+**shared.directive.dc** — DC sweep analysis
+
+```
+.dc srcname start stop step
+```
+
+| Parameter | Description | Units |
+|-----------|-------------|-------|
+| `srcname` | Independent source, parameter, or TEMP to sweep. |  |
+| `start` | Sweep start value. |  |
+| `stop` | Sweep stop value. |  |
+| `step` | Increment between points. |  |
+
+**Examples**
+
+- `.dc V1 0 5 0.1`
+- `.dc TEMP 0 100 25`
+
+### .end
+
+**shared.directive.end** — End of netlist
+
+```
+.end [comment]
+```
+
+| Parameter | Description | Units |
+|-----------|-------------|-------|
+| `comment` | Optional trailing comment. |  |
+
+**Examples**
+
+- `.end`
+- `.end my_circuit`
 
 ### .ends
 
@@ -39,6 +104,42 @@ Source of truth: JSON under [`reference/`](../../reference/). Hover in the edito
 
 **See also:** `shared.directive.subckt`
 
+### .ic
+
+**shared.directive.ic** — Set initial node voltages
+
+```
+.ic V(node)=value [V(node2)=value2 ...]
+```
+
+| Parameter | Description | Units |
+|-----------|-------------|-------|
+| `V(node)` | Node voltage to initialize. | V |
+
+**Examples**
+
+- `.ic V(out)=0`
+- `.ic V(in)=1.8 V(out)=0`
+
+### .include
+
+**shared.directive.include** — Include another netlist file
+
+```
+.include 'filename'
+```
+
+| Parameter | Description | Units |
+|-----------|-------------|-------|
+| `filename` | Path to the file to include (quotes recommended). |  |
+
+**Examples**
+
+- `.include 'models.inc'`
+- `.inc 'corners/tt.sp'`
+
+**See also:** `shared.directive.model`
+
 ### .model
 
 **shared.directive.model** — Define a device model
@@ -55,6 +156,20 @@ Source of truth: JSON under [`reference/`](../../reference/). Hover in the edito
 **Examples**
 
 - `.model nmos NMOS (VTO=0.7)`
+
+### .op
+
+**shared.directive.op** — DC operating-point analysis
+
+```
+.op
+```
+
+**Examples**
+
+- `.op`
+
+_Computes node voltages and bias points. Many simulators also print an operating point before .tran / .ac unless UIC is used._
 
 ### .param
 
@@ -73,6 +188,24 @@ Source of truth: JSON under [`reference/`](../../reference/). Hover in the edito
 
 - `.param rload=1k`
 - `.param pi=3.14159`
+
+### .print
+
+**shared.directive.print** — Print analysis results as a table
+
+```
+.print {DC|TRAN|AC} ov1 [ov2 ...]
+```
+
+| Parameter | Description | Units |
+|-----------|-------------|-------|
+| `DC|TRAN|AC` | Analysis type whose results to print. |  |
+| `ov` | Output variable, e.g. V(node), I(Vsrc), VM(node). |  |
+
+**Examples**
+
+- `.print TRAN V(out) I(Vdd)`
+- `.print DC V(2) V(3)`
 
 ### .subckt
 
@@ -93,6 +226,23 @@ Source of truth: JSON under [`reference/`](../../reference/). Hover in the edito
 - `.subckt inv in out`
 
 **See also:** `shared.directive.ends`
+
+### .temp
+
+**shared.directive.temp** — Set circuit temperature(s)
+
+```
+.temp t1 [t2 ...]
+```
+
+| Parameter | Description | Units |
+|-----------|-------------|-------|
+| `t1` | Temperature in Celsius (additional values run multi-temp analysis). | °C |
+
+**Examples**
+
+- `.temp 25`
+- `.temp 0 25 85`
 
 ### .tran
 

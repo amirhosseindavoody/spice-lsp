@@ -1,0 +1,10 @@
+{
+  "id": "shared.directive.op",
+  "kind": "directive",
+  "name": ".op",
+  "summary": "DC operating-point analysis",
+  "syntax": ".op",
+  "parameters": [],
+  "examples": [".op"],
+  "dialectNotes": "Computes node voltages and bias points. Many simulators also print an operating point before .tran / .ac unless UIC is used."
+}

@@ -1,0 +1,13 @@
+{
+  "id": "hspice.directive.include",
+  "kind": "directive",
+  "name": ".include",
+  "summary": "Include an external file (HSPICE)",
+  "syntax": ".INCLUDE 'filename'",
+  "parameters": [
+    { "name": "filename", "description": "File path to insert (quotes recommended)." }
+  ],
+  "examples": [".INCLUDE 'models/nmos.inc'", ".INC '../stimuli/clock.sp'"],
+  "seeAlso": ["hspice.directive.lib"],
+  "dialectNotes": "Also accepted as .INC. Prefer .LIB when selecting a named section from a library file."
+}

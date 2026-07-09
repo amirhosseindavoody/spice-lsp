@@ -1,0 +1,13 @@
+{
+  "id": "hspice.directive.temp",
+  "kind": "directive",
+  "name": ".temp",
+  "summary": "Set simulation temperature(s) (HSPICE)",
+  "syntax": ".TEMP t1 [t2 ...]",
+  "parameters": [
+    { "name": "t1", "description": "Temperature in Celsius; multiple values run multi-temperature analysis.", "units": "°C" }
+  ],
+  "examples": [".TEMP 25", ".TEMP -40 25 125"],
+  "seeAlso": ["hspice.directive.dc", "hspice.directive.option"],
+  "dialectNotes": "TEMP can also be the sweep variable on .DC / nested SWEEP."
+}

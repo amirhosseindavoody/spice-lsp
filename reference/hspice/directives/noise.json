@@ -1,0 +1,15 @@
+{
+  "id": "hspice.directive.noise",
+  "kind": "directive",
+  "name": ".noise",
+  "summary": "Noise analysis paired with .AC (HSPICE)",
+  "syntax": ".NOISE outvar srcnam [interval]",
+  "parameters": [
+    { "name": "outvar", "description": "Output voltage node or pair, e.g. V(out) or V(out,ref)." },
+    { "name": "srcnam", "description": "Independent source treated as the noise input reference." },
+    { "name": "interval", "description": "Optional print interval for intermediate noise summaries." }
+  ],
+  "examples": [".NOISE V(out) Vin", ".NOISE V(out,0) Vin 10"],
+  "seeAlso": ["hspice.directive.ac"],
+  "dialectNotes": "Requires a companion .AC statement. Reports total output noise and equivalent input noise."
+}

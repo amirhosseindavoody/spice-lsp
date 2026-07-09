@@ -1,0 +1,11 @@
+{
+  "id": "shared.directive.temp",
+  "kind": "directive",
+  "name": ".temp",
+  "summary": "Set circuit temperature(s)",
+  "syntax": ".temp t1 [t2 ...]",
+  "parameters": [
+    { "name": "t1", "description": "Temperature in Celsius (additional values run multi-temp analysis).", "units": "°C" }
+  ],
+  "examples": [".temp 25", ".temp 0 25 85"]
+}

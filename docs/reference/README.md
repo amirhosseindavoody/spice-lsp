@@ -17,9 +17,9 @@ Design notes: [Multi-dialect support](../internal/2_multi-dialect-design.md).
 
 | Dialect | Setting value | Entries (effective) | Catalog |
 |---------|---------------|---------------------|--------|
-| Shared base | — | 8 | [Shared](1_shared.md) |
-| HSPICE | `hspice` | 9 | [HSPICE](2_hspice.md) |
-| Ngspice | `ngspice` | 8 | [Ngspice](3_ngspice.md) |
-| LTspice | `ltspice` | 8 | [LTspice](4_ltspice.md) |
+| Shared base | — | 16 | [Shared](1_shared.md) |
+| HSPICE | `hspice` | 25 | [HSPICE](2_hspice.md) |
+| Ngspice | `ngspice` | 16 | [Ngspice](3_ngspice.md) |
+| LTspice | `ltspice` | 16 | [LTspice](4_ltspice.md) |
 
-_Embedded corpus size: 12 raw JSON entries (shared + overlays)._
+_Embedded corpus size: 37 raw JSON entries (shared + overlays)._
