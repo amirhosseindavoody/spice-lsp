@@ -31,11 +31,11 @@ The extension includes a prebuilt `spice-lsp` binary for:
 
 | Platform | Arch |
 |----------|------|
-| Linux | x64, arm64 |
+| Linux | x64, arm64 (glibc **2.31+**, e.g. Ubuntu 20.04 / Debian 11) |
 | macOS | Intel (x64), Apple Silicon (arm64) |
 | Windows | x64 |
 
-Other platforms need a `spice-lsp` binary on your `PATH`, or set `spiceLsp.serverPath` to an absolute path and run **SPICE LSP: Restart Server**.
+Other platforms (or older Linux glibc) need a `spice-lsp` binary on your `PATH`, or set `spiceLsp.serverPath` to an absolute path and run **SPICE LSP: Restart Server**.
 
 ## Settings
 

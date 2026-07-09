@@ -159,7 +159,15 @@ function parseTraceLevel(value: string | undefined): Trace {
 }
 
 function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
+  const message = error instanceof Error ? error.message : String(error);
+  if (/GLIBC_|version `GLIBC/i.test(message)) {
+    return (
+      `${message}. The bundled Linux spice-lsp binary needs glibc 2.31+ ` +
+      `(Ubuntu 20.04 / Debian 11 or newer). Update your OS libraries, or build ` +
+      `spice-lsp locally and set spiceLsp.serverPath.`
+    );
+  }
+  return message;
 }
 
 async function startClient(): Promise<void> {

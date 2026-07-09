@@ -195,15 +195,17 @@ Follow [Demo and testing](3_demo-and-test.md) VS Code section.
 
 The Marketplace extension ships a **platform-specific binary** inside the `.vsix` under `bin/<platform>-<arch>/`:
 
-| Platform id | OS / arch |
-|-------------|-----------|
-| `linux-x64` | Linux x86_64 |
-| `linux-arm64` | Linux ARM64 |
-| `darwin-x64` | macOS Intel |
-| `darwin-arm64` | macOS Apple Silicon |
-| `win32-x64` | Windows x64 |
+| Platform id | OS / arch | Notes |
+|-------------|-----------|-------|
+| `linux-x64` | Linux x86_64 | Linked for **glibc 2.31+** (Ubuntu 20.04 / Debian 11+) via Zig |
+| `linux-arm64` | Linux ARM64 | Same glibc 2.31 floor |
+| `darwin-x64` | macOS Intel | |
+| `darwin-arm64` | macOS Apple Silicon | |
+| `win32-x64` | Windows x64 | |
 
 There is **no** `win32-arm64` bundle today. Unsupported platforms must set `spiceLsp.serverPath` or put `spice-lsp` on `PATH`.
+
+Linux CI builds use `scripts/zig-cc-*.sh` so binaries from `ubuntu-latest` (glibc 2.39) still load on hosts with glibc 2.31. A plain `cargo build` on a newer distro may require a newer glibc — use the Zig wrappers for release artifacts.
 
 At activation, the extension resolves the binary in this order:
 
@@ -347,6 +349,7 @@ Pre-publish checklist:
 | Symptom | Likely cause | Fix |
 |---------|--------------|-----|
 | Server not starting | Binary not on PATH / wrong `serverPath` / unsupported platform | Set `spiceLsp.serverPath`, then **SPICE LSP: Restart Server**; check Output → SPICE Language Server |
+| `version 'GLIBC_2.3x' not found` | Host glibc older than the binary | Update to a Marketplace build linked for glibc 2.31+, or build locally and set `spiceLsp.serverPath` |
 | `spiceLsp.restartServer` not found | Extension never activated / activate failed before registering the command | Open a `.cir`/`.sp` file or run the command (auto-activates); update to a bundled build; reload the window |
 | No **SPICE Language Server** in Output | Extension did not activate | Open a SPICE file or run **SPICE LSP: Restart Server**; check **Developer: Show Running Extensions** for activation errors |
 | Extension activates with module errors | Unbundled VSIX missing `node_modules` | Use an esbuild-bundled release (`vsce package --no-dependencies` after `npm run compile`) |

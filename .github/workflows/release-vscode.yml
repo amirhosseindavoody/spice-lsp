@@ -152,10 +152,6 @@ jobs:
         with:
           ref: ${{ needs.prepare.outputs.sha }}
 
-      - name: Install Linux cross toolchain
-        if: matrix.platform == 'linux-arm64'
-        run: sudo apt-get update && sudo apt-get install -y gcc-aarch64-linux-gnu
-
       - name: Set up pixi
         uses: prefix-dev/setup-pixi@v0.8.9
         with:
@@ -164,17 +160,43 @@ jobs:
       - name: Add Rust target
         run: rustup target add "${{ matrix.target }}"
 
-      - name: Configure cross linker
-        if: matrix.platform == 'linux-arm64'
+      # Linux Marketplace binaries must run on glibc 2.31+ (Ubuntu 20.04).
+      # ubuntu-latest ships glibc 2.39; a plain cargo build requires GLIBC_2.34.
+      # Zig links against glibc 2.31 so older hosts can load the binary.
+      - name: Configure Linux glibc 2.31 linker
+        if: startsWith(matrix.platform, 'linux-')
+        shell: bash
         run: |
-          mkdir -p .cargo
-          cat >> .cargo/config.toml <<'EOF'
-          [target.aarch64-unknown-linux-gnu]
-          linker = "aarch64-linux-gnu-gcc"
-          EOF
+          chmod +x scripts/zig-cc-x86_64.sh scripts/zig-cc-aarch64.sh
+          mkdir -p "$HOME/.local/bin"
+          if [[ "${{ matrix.platform }}" == "linux-x64" ]]; then
+            ln -sf "$PWD/scripts/zig-cc-x86_64.sh" "$HOME/.local/bin/zig-cc-linux"
+            echo "CC_x86_64_unknown_linux_gnu=$HOME/.local/bin/zig-cc-linux" >> "$GITHUB_ENV"
+            echo "CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=$HOME/.local/bin/zig-cc-linux" >> "$GITHUB_ENV"
+          else
+            ln -sf "$PWD/scripts/zig-cc-aarch64.sh" "$HOME/.local/bin/zig-cc-linux"
+            echo "CC_aarch64_unknown_linux_gnu=$HOME/.local/bin/zig-cc-linux" >> "$GITHUB_ENV"
+            echo "CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=$HOME/.local/bin/zig-cc-linux" >> "$GITHUB_ENV"
+          fi
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: Build release binary
         run: cargo build --release -p spice-lsp --target "${{ matrix.target }}"
+
+      - name: Verify Linux glibc requirement
+        if: startsWith(matrix.platform, 'linux-')
+        shell: bash
+        run: |
+          bin="target/${{ matrix.target }}/release/${{ matrix.binary }}"
+          mapfile -t versions < <(objdump -T "$bin" | grep -oE 'GLIBC_[0-9.]+' | sort -uV)
+          max="${versions[-1]}"
+          echo "Highest GLIBC symbol: ${max}"
+          # Require max <= GLIBC_2.31 (sort -V: if 2.31 sorts after max, max is older/equal).
+          if [[ "$(printf '%s\n' "$max" "GLIBC_2.31" | sort -V | tail -1)" != "GLIBC_2.31" ]]; then
+            echo "Binary requires ${max}, which is newer than glibc 2.31" >&2
+            printf '%s\n' "${versions[@]}" | tail -20 >&2
+            exit 1
+          fi
 
       - name: Stage platform binary
         shell: bash
