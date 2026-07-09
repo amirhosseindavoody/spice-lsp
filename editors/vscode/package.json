@@ -29,7 +29,8 @@
   ],
   "icon": "media/icon.png",
   "activationEvents": [
-    "onLanguage:spice"
+    "onLanguage:spice",
+    "onCommand:spiceLsp.restartServer"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -86,15 +87,18 @@
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
-    "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./",
-    "package": "vsce package",
-    "publish": "vsce publish"
+    "compile": "node esbuild.mjs",
+    "check": "tsc -p ./ --noEmit",
+    "watch": "node esbuild.mjs --watch",
+    "package": "vsce package --no-dependencies",
+    "publish": "vsce publish --no-dependencies"
   },
   "devDependencies": {
+    "@types/mocha": "^10.0.10",
     "@types/node": "^20.0.0",
     "@types/vscode": "^1.90.0",
     "@vscode/vsce": "^3.0.0",
+    "esbuild": "^0.28.1",
     "typescript": "^5.0.0"
   },
   "dependencies": {

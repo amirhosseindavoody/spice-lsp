@@ -24,6 +24,7 @@ Shipped today:
 | No formatter or completion | Manual alignment / typing until v0.3–v0.4 |
 | Comment toggle uses `*` only | `;` and `$` are highlighted as comments; VS Code allows one `lineComment` |
 | No Windows arm64 bundled binary | Set `spiceLsp.serverPath` or put `spice-lsp` on `PATH` |
+| Linux bundled binary needs glibc 2.31+ | Upgrade the host OS, or build `spice-lsp` locally and set `spiceLsp.serverPath` |
 
 ## Post-MVP: dialect reference
 
