@@ -11,6 +11,7 @@ import {
 
 let client: LanguageClient | undefined;
 let extensionPath = "";
+let output: vscode.OutputChannel | undefined;
 
 /** Platforms that ship a bundled binary in the Marketplace VSIX. */
 const BUNDLED_PLATFORMS = new Set([
@@ -23,6 +24,12 @@ const BUNDLED_PLATFORMS = new Set([
 
 export function getPlatformId(): string {
   return `${process.platform}-${process.arch}`;
+}
+
+function log(message: string): void {
+  const line = `[spice-lsp] ${message}`;
+  output?.appendLine(line);
+  console.log(line);
 }
 
 function bundledBinaryPath(root: string): string {
@@ -111,6 +118,8 @@ function createClient(): LanguageClient {
     throw new Error(hint);
   }
 
+  log(`Starting language server: ${serverPath}`);
+
   const serverOptions: ServerOptions = {
     command: serverPath,
     args: [],
@@ -124,6 +133,7 @@ function createClient(): LanguageClient {
         "**/*.{cir,sp,spf,net,ckt}",
       ),
     },
+    outputChannel: output,
   };
 
   const languageClient = new LanguageClient(
@@ -155,6 +165,7 @@ function errorMessage(error: unknown): string {
 async function startClient(): Promise<void> {
   client = createClient();
   await client.start();
+  log("Language server started.");
 }
 
 async function stopClient(): Promise<void> {
@@ -165,6 +176,7 @@ async function stopClient(): Promise<void> {
   const current = client;
   client = undefined;
   await current.stop();
+  log("Language server stopped.");
 }
 
 async function restartClient(): Promise<void> {
@@ -174,9 +186,12 @@ async function restartClient(): Promise<void> {
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   extensionPath = context.extensionPath;
+  output = vscode.window.createOutputChannel("SPICE Language Server");
+  context.subscriptions.push(output);
+  log(`Activating extension from ${extensionPath} (${getPlatformId()})`);
 
-  // Register commands and subscriptions before starting the server so a failed
-  // start cannot leave contributed commands unregistered ("not found").
+  // Register commands before starting the server so a failed start cannot leave
+  // contributed commands unregistered ("not found").
   context.subscriptions.push({
     dispose: () => {
       void stopClient();
@@ -185,11 +200,15 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   context.subscriptions.push(
     vscode.commands.registerCommand("spiceLsp.restartServer", async () => {
+      log("Restart Server command invoked.");
       try {
         await restartClient();
+        void vscode.window.showInformationMessage("SPICE LSP restarted.");
       } catch (error) {
+        const message = errorMessage(error);
+        log(`Restart failed: ${message}`);
         void vscode.window.showErrorMessage(
-          `Failed to restart SPICE LSP: ${errorMessage(error)}`,
+          `Failed to restart SPICE LSP: ${message}`,
         );
       }
     }),
@@ -204,8 +223,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         try {
           await restartClient();
         } catch (error) {
+          const message = errorMessage(error);
+          log(`Config restart failed: ${message}`);
           void vscode.window.showErrorMessage(
-            `Failed to restart SPICE LSP: ${errorMessage(error)}`,
+            `Failed to restart SPICE LSP: ${message}`,
           );
         }
       }
@@ -215,8 +236,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   try {
     await startClient();
   } catch (error) {
+    const message = errorMessage(error);
+    log(`Start failed: ${message}`);
     void vscode.window.showErrorMessage(
-      `Failed to start SPICE LSP: ${errorMessage(error)}. Use "SPICE LSP: Restart Server" after fixing the server path.`,
+      `Failed to start SPICE LSP: ${message}. Check Output → SPICE Language Server, then use "SPICE LSP: Restart Server".`,
     );
   }
 }

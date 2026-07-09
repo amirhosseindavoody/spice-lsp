@@ -74,15 +74,26 @@ fi
 cd "$EXT_DIR"
 npm install
 npm run compile
-# Include runtime npm dependencies (vscode-languageclient). Do not pass
-# --no-dependencies: the extension is not webpack-bundled, so omitting
-# node_modules leaves Marketplace installs unable to activate.
-npx vsce package
+# Extension JS is esbuild-bundled (vscode-languageclient inlined). Pack without
+# shipping node_modules.
+npx vsce package --no-dependencies
 
 VSIX="$(ls -t "$EXT_DIR"/*.vsix | head -1)"
 # Avoid `grep -q` under `pipefail`: early exit SIGPIPEs unzip and falsely fails the check.
-if ! unzip -l "$VSIX" | grep -F 'extension/node_modules/vscode-languageclient/' >/dev/null; then
-  echo "Packaged VSIX is missing vscode-languageclient: $VSIX" >&2
+if ! unzip -l "$VSIX" | grep -F 'extension/out/extension.js' >/dev/null; then
+  echo "Packaged VSIX is missing extension/out/extension.js: $VSIX" >&2
+  exit 1
+fi
+if unzip -l "$VSIX" | grep -F 'extension/node_modules/' >/dev/null; then
+  echo "Packaged VSIX unexpectedly contains node_modules (should be bundled): $VSIX" >&2
+  exit 1
+fi
+if ! unzip -p "$VSIX" extension/out/extension.js | grep -F 'LanguageClient' >/dev/null; then
+  echo "Bundled extension.js does not appear to include LanguageClient: $VSIX" >&2
+  exit 1
+fi
+if ! unzip -l "$VSIX" | grep -F 'extension/out/terminateProcess.sh' >/dev/null; then
+  echo "Packaged VSIX is missing terminateProcess.sh helper: $VSIX" >&2
   exit 1
 fi
 

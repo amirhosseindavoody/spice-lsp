@@ -46,8 +46,8 @@ Key fields:
 | Field | Purpose |
 |-------|---------|
 | `engines.vscode` | Minimum VS Code version |
-| `activationEvents` | `onLanguage:spice` — lazy activate |
-| `main` | `./out/extension.js` (compiled output) |
+| `activationEvents` | `onLanguage:spice`, `onCommand:spiceLsp.restartServer` |
+| `main` | `./out/extension.js` (esbuild bundle) |
 | `contributes.languages` | Register `spice` language id and file extensions |
 | `contributes.configuration` | `spiceLsp.serverPath`, `spiceLsp.trace.server` |
 | `contributes.commands` | `spiceLsp.restartServer` — must register in `activate` before `client.start()` |
@@ -172,7 +172,7 @@ pixi run build
 
 # terminal 2 — extension
 cd editors/vscode
-npm run watch   # tsc --watch
+npm run watch   # esbuild --watch
 
 # VS Code: F5 to launch Extension Development Host
 ```
@@ -303,10 +303,10 @@ Optional local dry-run before relying on CI:
 pixi run build
 pixi run ext-package
 # output: editors/vscode/spice-lsp-<version>.vsix
-# packaging fails if vscode-languageclient is missing from the VSIX
+# packaging fails if the esbuild bundle is missing LanguageClient or terminateProcess.sh
 ```
 
-Do **not** pass `--no-dependencies` to `vsce package` / `vsce publish`. The extension is compiled with `tsc` (not webpack-bundled), so runtime npm deps such as `vscode-languageclient` must be packed into the VSIX.
+The extension is **esbuild-bundled** (`npm run compile` → `out/extension.js` with `vscode-languageclient` inlined). Package and publish with `vsce … --no-dependencies` so the VSIX does not ship `node_modules`.
 
 ### Release from CI (automatic)
 
@@ -331,7 +331,7 @@ pixi run ext-package
 cd editors/vscode
 # bump version first if this version was already published
 npm version patch --no-git-tag-version
-npx vsce publish --packagePath "$(ls -t *.vsix | head -1)"   # requires VSCE_PAT
+npx vsce publish --no-dependencies --packagePath "$(ls -t *.vsix | head -1)"   # requires VSCE_PAT
 ```
 
 Pre-publish checklist:
@@ -347,8 +347,9 @@ Pre-publish checklist:
 | Symptom | Likely cause | Fix |
 |---------|--------------|-----|
 | Server not starting | Binary not on PATH / wrong `serverPath` / unsupported platform | Set `spiceLsp.serverPath`, then **SPICE LSP: Restart Server**; check Output → SPICE Language Server |
-| `spiceLsp.restartServer` not found | Extension activate failed before registering the command | Update to a build that registers commands before `client.start()`; reload the window |
-| Extension activates with module errors | VSIX packed with `--no-dependencies` (missing `vscode-languageclient`) | Repackage with `vsce package` (dependencies included); do not use `--no-dependencies` without bundling |
+| `spiceLsp.restartServer` not found | Extension never activated / activate failed before registering the command | Open a `.cir`/`.sp` file or run the command (auto-activates); update to a bundled build; reload the window |
+| No **SPICE Language Server** in Output | Extension did not activate | Open a SPICE file or run **SPICE LSP: Restart Server**; check **Developer: Show Running Extensions** for activation errors |
+| Extension activates with module errors | Unbundled VSIX missing `node_modules` | Use an esbuild-bundled release (`vsce package --no-dependencies` after `npm run compile`) |
 | No diagnostics | Wrong language id | Ensure file extension maps to `spice` |
 | Stale diagnostics | Server crash | Check Output → SPICE Language Server; restart server |
 | Wrong binary arch | Download mismatch / unsupported platform | Pick correct release asset or build from source |

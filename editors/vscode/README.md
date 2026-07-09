@@ -12,7 +12,7 @@ Language support for [SPICE](https://en.wikipedia.org/wiki/SPICE) circuit simula
 
 That is enough for day-to-day editing. The matching `spice-lsp` binary for your platform is bundled; leave `spiceLsp.serverPath` empty unless you are developing the server yourself.
 
-If nothing happens after opening a file, check **Output → SPICE Language Server**, then run **SPICE LSP: Restart Server** from the Command Palette.
+If nothing happens after opening a file, check **Output → SPICE Language Server**, then run **SPICE LSP: Restart Server** from the Command Palette. That Output channel is created as soon as the extension activates.
 
 ## Features
 

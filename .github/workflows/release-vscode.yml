@@ -250,4 +250,4 @@ jobs:
             exit 1
           fi
           npm install -g @vscode/vsce
-          vsce publish --packagePath "$(ls editors/vscode/*.vsix | head -1)"
+          vsce publish --no-dependencies --packagePath "$(ls editors/vscode/*.vsix | head -1)"
