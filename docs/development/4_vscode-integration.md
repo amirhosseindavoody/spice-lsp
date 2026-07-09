@@ -46,11 +46,11 @@ Key fields:
 | Field | Purpose |
 |-------|---------|
 | `engines.vscode` | Minimum VS Code version |
-| `activationEvents` | `onLanguage:spice`, `onCommand:spiceLsp.restartServer` |
+| `activationEvents` | `onLanguage:spice`, `onCommand:spiceLsp.restartServer`, `onCommand:spiceLsp.setDialect` |
 | `main` | `./out/extension.js` (esbuild bundle) |
 | `contributes.languages` | Register `spice` language id and file extensions |
-| `contributes.configuration` | `spiceLsp.serverPath`, `spiceLsp.trace.server` |
-| `contributes.commands` | `spiceLsp.restartServer` — must register in `activate` before `client.start()` |
+| `contributes.configuration` | `spiceLsp.serverPath`, `spiceLsp.trace.server`, `spiceLsp.dialect` |
+| `contributes.commands` | `spiceLsp.restartServer`, `spiceLsp.setDialect` — register first in `activate`; do not await LSP start before returning |
 
 Example language contribution:
 
@@ -85,7 +85,7 @@ Comment toggle uses `*` (`language-configuration.json` allows only one `lineComm
 
 ## extension.ts
 
-Minimal Language Client setup. Register `spiceLsp.restartServer` **before** starting the client, and catch startup failures so a missing/broken binary cannot leave the command unregistered (`command 'spiceLsp.restartServer' not found`):
+Minimal Language Client setup. Register **both** palette commands **before** any `await`, then start the client in the background. If `activate` awaits a slow/hung `client.start()`, VS Code times out `onCommand` activation and reports `command 'spiceLsp.setDialect' not found` (same for Restart Server):
 
 ```typescript
 import * as vscode from "vscode";
@@ -123,14 +123,15 @@ export async function activate(context: vscode.ExtensionContext) {
       await client?.stop();
       await startClient(serverPath);
     }),
+    vscode.commands.registerCommand("spiceLsp.setDialect", async () => {
+      /* QuickPick → update spiceLsp.dialect → restart client */
+    }),
   );
 
-  try {
-    await startClient(serverPath);
-  } catch (error) {
+  void startClient(serverPath).catch((error) => {
     const message = error instanceof Error ? error.message : String(error);
     void vscode.window.showErrorMessage(`Failed to start SPICE LSP: ${message}`);
-  }
+  });
 }
 
 export async function deactivate() {
@@ -350,8 +351,8 @@ Pre-publish checklist:
 |---------|--------------|-----|
 | Server not starting | Binary not on PATH / wrong `serverPath` / unsupported platform | Set `spiceLsp.serverPath`, then **SPICE LSP: Restart Server**; check Output → SPICE Language Server |
 | `version 'GLIBC_2.3x' not found` | Host glibc older than the binary | Update to a Marketplace build linked for glibc 2.31+, or build locally and set `spiceLsp.serverPath` |
-| `spiceLsp.restartServer` not found | Extension never activated / activate failed before registering the command | Open a `.cir`/`.sp` file or run the command (auto-activates); update to a bundled build; reload the window |
-| No **SPICE Language Server** in Output | Extension did not activate | Open a SPICE file or run **SPICE LSP: Restart Server**; check **Developer: Show Running Extensions** for activation errors |
+| `spiceLsp.restartServer` / `spiceLsp.setDialect` not found | Extension never activated, activate hung on LSP start, or Marketplace build predates the command (`setDialect` needs **≥ 0.2.10**) | Update the extension; reload the window; open a `.cir`/`.sp` file or run the command (auto-activates). Prefer builds that register commands before awaiting `client.start()` |
+| No **SPICE Language Server** in Output | Extension did not activate | Open a SPICE file or run **SPICE LSP: Restart Server** / **Set Dialect…**; check **Developer: Show Running Extensions** for activation errors |
 | Extension activates with module errors | Unbundled VSIX missing `node_modules` | Use an esbuild-bundled release (`vsce package --no-dependencies` after `npm run compile`) |
 | No diagnostics | Wrong language id | Ensure file extension maps to `spice` |
 | Stale diagnostics | Server crash | Check Output → SPICE Language Server; restart server |

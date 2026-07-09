@@ -13,6 +13,17 @@ let client: LanguageClient | undefined;
 let extensionPath = "";
 let output: vscode.OutputChannel | undefined;
 let dialectStatus: vscode.StatusBarItem | undefined;
+/** Serializes start/stop/restart so background activate cannot race Set Dialect. */
+let clientLifecycle: Promise<void> = Promise.resolve();
+
+function enqueueClientLifecycle<T>(op: () => Promise<T>): Promise<T> {
+  const run = clientLifecycle.then(op, op);
+  clientLifecycle = run.then(
+    () => undefined,
+    () => undefined,
+  );
+  return run;
+}
 
 const DIALECTS = [
   { id: "hspice", label: "HSPICE" },
@@ -209,13 +220,16 @@ function errorMessage(error: unknown): string {
   return message;
 }
 
-async function startClient(): Promise<void> {
+async function startClientUnlocked(): Promise<void> {
+  if (client) {
+    return;
+  }
   client = createClient();
   await client.start();
   log("Language server started.");
 }
 
-async function stopClient(): Promise<void> {
+async function stopClientUnlocked(): Promise<void> {
   if (!client) {
     return;
   }
@@ -226,16 +240,27 @@ async function stopClient(): Promise<void> {
   log("Language server stopped.");
 }
 
+async function startClient(): Promise<void> {
+  await enqueueClientLifecycle(() => startClientUnlocked());
+}
+
+async function stopClient(): Promise<void> {
+  await enqueueClientLifecycle(() => stopClientUnlocked());
+}
+
 async function restartClient(): Promise<void> {
-  await stopClient();
-  await startClient();
+  await enqueueClientLifecycle(async () => {
+    await stopClientUnlocked();
+    await startClientUnlocked();
+  });
 }
 
 async function setDialect(): Promise<void> {
+  const current = currentDialectId();
   const picked = await vscode.window.showQuickPick(
     DIALECTS.map((d) => ({
       label: d.label,
-      description: d.id,
+      description: d.id === current ? `${d.id} (current)` : d.id,
       id: d.id,
     })),
     {
@@ -247,22 +272,33 @@ async function setDialect(): Promise<void> {
     return;
   }
 
+  if (picked.id === current) {
+    void vscode.window.showInformationMessage(
+      `SPICE dialect already ${picked.label}`,
+    );
+    return;
+  }
+
   const target = vscode.workspace.workspaceFolders?.length
     ? vscode.ConfigurationTarget.Workspace
     : vscode.ConfigurationTarget.Global;
+  // onDidChangeConfiguration restarts the client; avoid a second restart here.
   await vscode.workspace
     .getConfiguration("spiceLsp")
     .update("dialect", picked.id, target);
   updateDialectStatus();
   log(`Dialect set to ${picked.id}`);
+  void vscode.window.showInformationMessage(`SPICE dialect: ${picked.label}`);
+}
+
+async function startClientInBackground(): Promise<void> {
   try {
-    await restartClient();
-    void vscode.window.showInformationMessage(
-      `SPICE dialect: ${picked.label}`,
-    );
+    await startClient();
   } catch (error) {
+    const message = errorMessage(error);
+    log(`Start failed: ${message}`);
     void vscode.window.showErrorMessage(
-      `Failed to restart SPICE LSP after dialect change: ${errorMessage(error)}`,
+      `Failed to start SPICE LSP: ${message}. Check Output → SPICE Language Server, then use "SPICE LSP: Restart Server" or "SPICE LSP: Set Dialect…".`,
     );
   }
 }
@@ -273,21 +309,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   context.subscriptions.push(output);
   log(`Activating extension from ${extensionPath} (${getPlatformId()})`);
 
-  dialectStatus = vscode.window.createStatusBarItem(
-    vscode.StatusBarAlignment.Right,
-    100,
-  );
-  dialectStatus.command = "spiceLsp.setDialect";
-  updateDialectStatus();
-  dialectStatus.show();
-  context.subscriptions.push(dialectStatus);
-
-  context.subscriptions.push({
-    dispose: () => {
-      void stopClient();
-    },
-  });
-
+  // Register commands before any await so onCommand activation (Set Dialect /
+  // Restart Server) completes promptly. Awaiting client.start() here made VS Code
+  // report "command not found" when the language server was slow or hung.
   context.subscriptions.push(
     vscode.commands.registerCommand("spiceLsp.restartServer", async () => {
       log("Restart Server command invoked.");
@@ -309,6 +333,21 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       await setDialect();
     }),
   );
+
+  dialectStatus = vscode.window.createStatusBarItem(
+    vscode.StatusBarAlignment.Right,
+    100,
+  );
+  dialectStatus.command = "spiceLsp.setDialect";
+  updateDialectStatus();
+  dialectStatus.show();
+  context.subscriptions.push(dialectStatus);
+
+  context.subscriptions.push({
+    dispose: () => {
+      void stopClient();
+    },
+  });
 
   context.subscriptions.push(
     vscode.workspace.onDidChangeConfiguration(async (event) => {
@@ -333,15 +372,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     }),
   );
 
-  try {
-    await startClient();
-  } catch (error) {
-    const message = errorMessage(error);
-    log(`Start failed: ${message}`);
-    void vscode.window.showErrorMessage(
-      `Failed to start SPICE LSP: ${message}. Check Output → SPICE Language Server, then use "SPICE LSP: Restart Server".`,
-    );
-  }
+  void startClientInBackground();
 }
 
 export async function deactivate(): Promise<void> {
