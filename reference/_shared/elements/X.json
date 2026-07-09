@@ -1,0 +1,12 @@
+{
+  "id": "shared.element.X",
+  "kind": "element",
+  "name": "X",
+  "summary": "Subcircuit instance",
+  "syntax": "Xname n1 [n2 ...] subckt_name [params...]",
+  "parameters": [
+    { "name": "n1...", "description": "Nodes connected to subcircuit ports." },
+    { "name": "subckt_name", "description": "Name of a `.subckt` definition." }
+  ],
+  "examples": ["X1 a b buffer"]
+}

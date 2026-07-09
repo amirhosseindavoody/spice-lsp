@@ -1,0 +1,13 @@
+{
+  "id": "shared.element.C",
+  "kind": "element",
+  "name": "C",
+  "summary": "Capacitor",
+  "syntax": "Cname n1 n2 value [params...]",
+  "parameters": [
+    { "name": "n1", "description": "Positive node." },
+    { "name": "n2", "description": "Negative node." },
+    { "name": "value", "description": "Capacitance.", "units": "F" }
+  ],
+  "examples": ["C1 out 0 1p"]
+}

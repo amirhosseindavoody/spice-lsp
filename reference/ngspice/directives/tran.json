@@ -1,0 +1,16 @@
+{
+  "id": "ngspice.directive.tran",
+  "kind": "directive",
+  "name": ".tran",
+  "summary": "Transient analysis (Ngspice)",
+  "syntax": ".tran tstep tstop [tstart [tmax]] [UIC]",
+  "parameters": [
+    { "name": "tstep", "description": "Suggested printing increment.", "units": "s" },
+    { "name": "tstop", "description": "Final time.", "units": "s" },
+    { "name": "tstart", "description": "Optional start of printing.", "units": "s" },
+    { "name": "tmax", "description": "Optional maximum timestep.", "units": "s" },
+    { "name": "UIC", "description": "Use initial conditions." }
+  ],
+  "examples": [".tran 1n 100n", ".tran 1u 1m 0 10u UIC"],
+  "dialectNotes": "Ngspice also accepts `;` and `$` comments in addition to `*`."
+}

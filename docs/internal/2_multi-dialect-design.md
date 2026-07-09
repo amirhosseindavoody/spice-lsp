@@ -2,7 +2,7 @@
 
 Design for [issue #16](https://github.com/amirhosseindavoody/spice-lsp/issues/16): selectable SPICE dialects (default **HSPICE**), retained **Ngspice** support, a maintainable system for growing syntax/reference knowledge, and reuse of that data for hover (and later completion).
 
-**Status:** design only — no implementation in this change.  
+**Status:** Phase A (dialect switch) and Phase B (reference corpus + hover) implemented.  
 **Related:** [Dialect reference and net semantics](../8_dialect-reference-and-semantics.md), [LSP features](../5_lsp-features.md), [Architecture](../4_architecture.md).
 
 ---
@@ -196,18 +196,18 @@ Optional: `parameters`, `examples`, `seeAlso`, `diagnostics`, `deprecated`, `dia
 
 | Task | Purpose |
 |------|---------|
-| `pixi run reference-validate` | JSON Schema + required sections + unique ids |
-| `pixi run reference-codegen` | Emit Rust `phf`/static index or `include_dir!` manifest |
-| `pixi run reference-check` | CI: codegen dry-run / diff (Ruff `Mode::Check`) |
-| Optional later | Generate mdBook catalog pages from the same JSON |
+| `pixi run reference-validate` | Load embedded corpus; unit tests for merge/lookup |
+| `pixi run reference-docs` | Write mdBook pages under `docs/reference/` from the corpus |
+| `pixi run reference-docs-check` | CI: fail if catalog markdown drifts from JSON |
 
 **Authoring workflow (add a new directive):**
 
 1. Add/edit `reference/<dialect>/directives/foo.json` (or `_shared/` if universal).
 2. `pixi run reference-validate`.
-3. Add hover snapshot fixture under `test-data/hover/<dialect>/`.
-4. `pixi run test`.
-5. No Rust change unless a new *kind* or lookup path is needed.
+3. `pixi run reference-docs` (regenerate catalog chapters).
+4. Add hover snapshot fixture under `test-data/hover/<dialect>/` when needed.
+5. `pixi run test`.
+6. No Rust change unless a new *kind* or lookup path is needed.
 
 This is the spice-lsp analogue of Ruff’s “add rule → docs fall out of metadata,” with **JSON as the authoring surface** instead of `///` comments.
 
@@ -321,9 +321,11 @@ TextMate grammar stays shared initially; dialect-specific highlighting can wait.
 - Comment / continuation profile differences.
 - Split grammar only where needed; grow LTspice.
 
-### Phase D — Catalog docs (optional)
+### Phase D — Catalog docs
 
-- Generate a book chapter or static catalog from JSON (Ruff `generate-docs` analogue), still one SSOT.
+- Generate mdBook pages under `docs/reference/` from the embedded corpus (`spice-reference-catalog`).
+- Pixi: `reference-docs` (write) and `reference-docs-check` (CI drift guard).
+- Still one SSOT: edit JSON under `reference/`, then regenerate.
 
 Issue #16 is satisfied by **Phase A + a clear path through B**; B can ship in the same epic as follow-up PRs.
 
@@ -366,14 +368,16 @@ Issue #16 is satisfied by **Phase A + a clear path through B**; B can ship in th
 
 ## 13. Implementation checklist (when coding starts)
 
-- [ ] `spiceLsp.dialect` + `spiceLsp.setDialect` + status bar
-- [ ] Server session dialect + config update path
-- [ ] `DialectProfile` + Ngspice parity tests under `ngspice`
-- [ ] Update [LSP features](../5_lsp-features.md), [limitations](../7_limitations.md), Marketplace README for default HSPICE
-- [ ] Scaffold `reference/schema.json`, `_shared/`, `hspice/`, `ngspice/`
-- [ ] `spice-reference` + validate/codegen tasks
-- [ ] Hover provider + snapshots
-- [ ] Close #16 when Phase A is shipped and Phase B is scheduled/linked
+- [x] `spiceLsp.dialect` + `spiceLsp.setDialect` + status bar
+- [x] Server session dialect + config update path
+- [x] `DialectProfile` + Ngspice parity tests under `ngspice`
+- [x] Update [LSP features](../5_lsp-features.md), [limitations](../7_limitations.md), Marketplace README for default HSPICE
+- [x] Scaffold `reference/schema.json`, `_shared/`, `hspice/`, `ngspice/`
+- [x] `spice-reference` + validate/codegen tasks
+- [x] Hover provider + snapshots
+- [x] Close #16 when Phase A is shipped and Phase B is scheduled/linked
+- [ ] Phase C: dialect-sensitive diagnostics / grammar splits
+- [x] Phase D: catalog docs from JSON (`docs/reference/`, `reference-docs` / `reference-docs-check`)
 
 ---
 

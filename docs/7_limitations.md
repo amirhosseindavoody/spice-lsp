@@ -18,14 +18,13 @@ Shipped today:
 | Limitation | Workaround |
 |------------|------------|
 | Ngspice-oriented parsing | Avoid LTspice/HSPICE-specific syntax until v0.4 |
-| No hover or curated reference docs | Consult simulator manual; corpus + hover per [Multi-dialect design](internal/2_multi-dialect-design.md) |
-| No dialect setting yet | Planned default **HSPICE** with Ngspice retained; see issue #16 design |
 | No connectivity analysis | Manual review; dangling/floating checks arrive in v0.5 |
 | Single-file analysis | `.include` not followed |
 | No formatter or completion | Manual alignment / typing until v0.3–v0.4 |
 | Comment toggle uses `*` only | `;` and `$` are highlighted as comments; VS Code allows one `lineComment` |
 | No Windows arm64 bundled binary | Set `spiceLsp.serverPath` or put `spice-lsp` on `PATH` |
 | Linux bundled binary needs glibc 2.31+ | Upgrade the host OS, or build `spice-lsp` locally and set `spiceLsp.serverPath` |
+| Shared grammar for all dialects | Dialect-specific parse quirks land in later phases; hover/docs already switch |
 
 ## Post-MVP: dialect reference
 

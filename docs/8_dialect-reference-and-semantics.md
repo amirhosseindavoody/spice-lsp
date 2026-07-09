@@ -92,10 +92,11 @@ The Rust crate `spice-reference` (or a module in `spice-parser`) loads and index
 
 Reference content is **your ongoing work**, independent of parser releases:
 
-1. Add or edit JSON under `reference/<dialect>/`.
-2. Run `pixi run test-reference` (planned) to validate schema and required fields.
-3. Add a snapshot test: cursor position in fixture → expected hover markdown.
-4. Ship with the binary (embed at compile time with `include_str!` / build script, or load from a configurable path for development).
+1. Add or edit JSON under `reference/<dialect>/` or `reference/_shared/`.
+2. Run `pixi run reference-validate` to load and exercise the embedded corpus.
+3. Run `pixi run reference-docs` to regenerate the [Dialect reference catalog](reference/README.md) in the book.
+4. Add or update hover snapshot tests when behavior changes.
+5. Ship with the binary (corpus is embedded at compile time via the `spice-reference` build script).
 
 Prefer small, focused files over one giant manual. Link related entries with `seeAlso`.
 

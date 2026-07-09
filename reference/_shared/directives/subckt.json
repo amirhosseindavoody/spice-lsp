@@ -1,0 +1,13 @@
+{
+  "id": "shared.directive.subckt",
+  "kind": "directive",
+  "name": ".subckt",
+  "summary": "Begin a subcircuit definition",
+  "syntax": ".subckt name n1 [n2 ...] [params: p=val ...]",
+  "parameters": [
+    { "name": "name", "description": "Subcircuit name." },
+    { "name": "n1...", "description": "External port nodes in order." }
+  ],
+  "examples": [".subckt buffer in out", ".subckt inv in out"],
+  "seeAlso": ["shared.directive.ends"]
+}

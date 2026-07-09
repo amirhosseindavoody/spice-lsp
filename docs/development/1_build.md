@@ -42,6 +42,9 @@ Add these to `[tasks]` in `pixi.toml` as the workspace grows:
 | `ext-install` | `npm install` in `editors/vscode` | Extension deps |
 | `ext-compile` | `npm run compile` | Build extension TS |
 | `ext-package` | `./scripts/package-vscode-extension.sh` | Bundle local binary + `.vsix` |
+| `reference-validate` | `cargo test -p spice-reference --lib` | Validate embedded corpus |
+| `reference-docs` | `spice-reference-catalog write` | Regenerate `docs/reference/` from corpus |
+| `reference-docs-check` | `spice-reference-catalog check` | Fail if catalog docs drift |
 
 Example `pixi.toml` fragment:
 
@@ -111,11 +114,10 @@ Cross-compile with `cross` or platform matrix in CI. The [Release VS Code extens
 
 ## Documentation site
 
-## Documentation site
-
 Build locally:
 
 ```bash
+pixi run reference-docs   # regenerate dialect catalog from reference/
 pixi run mdbook-build
 # output: docs/book/
 ```
@@ -126,9 +128,11 @@ Preview:
 pixi run mdbook-serve
 ```
 
+After editing JSON under `reference/`, run `pixi run reference-docs` so the [Dialect reference catalog](../reference/README.md) stays in sync. CI runs `pixi run reference-docs-check`.
+
 ### CI and GitHub Pages
 
-The [Deploy docs](../../.github/workflows/deploy-docs.yml) workflow runs on pushes to `main` when `docs/`, `pixi.toml`, or `pixi.lock` change. It:
+The [Deploy docs](../../.github/workflows/deploy-docs.yml) workflow runs on pushes to `main` when `docs/`, `reference/`, `crates/spice-reference/`, `pixi.toml`, or `pixi.lock` change. It:
 
 1. Runs `pixi run mdbook-build`
 2. Pushes the output to the `gh-pages` branch

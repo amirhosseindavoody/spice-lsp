@@ -16,8 +16,8 @@ LSP methods spice-lsp implements or plans to implement, organized by release pha
 | `textDocument/documentSymbol` | | ✓ | | | |
 | `textDocument/definition` / `references` | | ✓ | | | |
 | `textDocument/completion` | | | ✓ | | |
+| `textDocument/hover` (dialect reference) | | | ✓ | | curated `reference/` |
 | `textDocument/hover` (file-local) | | | ✓ | | subcircuit pins, in-file models |
-| `textDocument/hover` (dialect reference) | | | | | ✓ |
 | `textDocument/formatting` | | | | ✓ | |
 | `textDocument/didSave` (re-lint) | | | | ✓ | |
 
@@ -100,6 +100,14 @@ Diagnostics from `didChange` are **debounced** (~150 ms) so rapid typing does no
 `spiceLsp.dialect` is `hspice` \| `ngspice` \| `ltspice` (default **`hspice`**). The VS Code command **SPICE LSP: Set Dialect…** and a status-bar item change it. The same dialect selects the reference corpus for hover and (later) completion docs.
 
 Design: [Multi-dialect support](internal/2_multi-dialect-design.md).
+
+### Hover
+
+`textDocument/hover` resolves in order:
+
+1. Curated entry from `reference/` for the active dialect (`_shared` fallback)
+2. File-local detail for `.subckt` / `.model` / `.param` symbols
+3. No hover
 
 ## v0.4 — Formatting
 

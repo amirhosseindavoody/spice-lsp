@@ -1,5 +1,6 @@
 use tree_sitter::{Node, Parser, Tree};
 
+use crate::dialect::Dialect;
 use crate::diagnostic::{Diagnostic, Severity, Span};
 use crate::symbols::{build_index, classify_line, Index, LineKind};
 
@@ -9,10 +10,21 @@ pub struct ParseResult {
     pub tree: Tree,
     pub diagnostics: Vec<Diagnostic>,
     pub index: Index,
+    pub dialect: Dialect,
 }
 
-/// Parse `source` and return syntax / structural / semantic diagnostics.
+/// Parse `source` with the default dialect (HSPICE) and return diagnostics.
 pub fn analyze(source: &str) -> ParseResult {
+    analyze_with_dialect(source, Dialect::default())
+}
+
+/// Parse `source` under `dialect`.
+///
+/// Phase A/B: the shared grammar is used for all dialects; `dialect` is stored
+/// for hover / future profile-sensitive diagnostics.
+pub fn analyze_with_dialect(source: &str, dialect: Dialect) -> ParseResult {
+    let _profile = dialect.profile();
+
     let mut parser = Parser::new();
     parser
         .set_language(&tree_sitter_spice::language())
@@ -33,6 +45,7 @@ pub fn analyze(source: &str) -> ParseResult {
         tree,
         diagnostics,
         index,
+        dialect,
     }
 }
 
