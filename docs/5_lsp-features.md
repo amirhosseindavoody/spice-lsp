@@ -78,7 +78,7 @@ Adds outline and navigation on top of MVP sync:
 | `Variable` | `.param` |
 | `Field` | Instance line |
 
-**Navigation:** go to definition and find references for subcircuits, models, and parameters.
+**Navigation:** go to definition and find references for subcircuits, models, and parameters. `textDocument/references` honors `context.includeDeclaration` (omit definition sites when the client passes `false`).
 
 **Diagnostics:**
 
@@ -86,6 +86,8 @@ Adds outline and navigation on top of MVP sync:
 |------|---------|----------|
 | `spice/duplicate-name` | `duplicate component name 'R1'` | Warning |
 | `spice/unknown-model` | `model 'nfet' not defined` | Warning |
+
+Diagnostics from `didChange` are **debounced** (~150 ms) so rapid typing does not re-analyze on every keystroke. `didOpen` publishes immediately. Navigation handlers refresh the in-memory index on demand.
 
 ## v0.3 — Completion and file-local hover
 
@@ -142,9 +144,10 @@ v0.2 adds:
 
 4. `documentSymbol` returns hierarchical outline for `.subckt` blocks
 5. `definition` on subcircuit reference jumps to `.subckt` definition
-6. `references` on subcircuit definition lists definition + usages
+6. `references` on subcircuit definition lists definition + usages; `includeDeclaration: false` omits the definition
 7. Semantic fixtures (`duplicate-instance.cir`, `unknown-subckt.cir`) produce warning codes
+8. Rapid `didChange` events coalesce into a single diagnostics publish after the debounce window
 
-8. (v0.5) Open semantic fixture → dangling / floating warnings; hover snapshot matches reference entry
+9. (v0.5) Open semantic fixture → dangling / floating warnings; hover snapshot matches reference entry
 
 See [Demo and testing](development/3_demo-and-test.md).

@@ -62,11 +62,11 @@ Layer 4 is documented in detail in [Dialect reference and net semantics](8_diale
 1. **Client connects** via stdio; sends `initialize` with client capabilities and dialect option.
 2. **Server responds** with capabilities for the current phase (MVP: incremental sync only).
 3. **Document open/change** updates an in-memory map of open buffers.
-4. **On each change** (debounced post-MVP):
+4. **On each change** (debounced ~150 ms):
    - Re-parse with Tree-sitter
    - Run diagnostic passes for the enabled phase
-   - Send `textDocument/publishDiagnostics`
-5. **Hover / completion requests** (v0.3+) resolve against the CST; v0.5+ also queries `spice-reference`.
+   - Send `textDocument/publishDiagnostics` with the document version
+5. **Hover / completion requests** (v0.3+) resolve against the CST; v0.5+ also queries `spice-reference`. Navigation requests re-analyze on demand so the symbol index stays current even when diagnostics are still debouncing.
 6. **Shutdown** exits cleanly.
 
 ### Document model

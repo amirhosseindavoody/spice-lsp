@@ -2,21 +2,27 @@
 
 Known constraints and unsupported behavior. Updated as the parser and LSP mature.
 
-## Current (pre-MVP scaffolding)
+## Current (v0.2)
 
-- No Rust crates, grammar, or VS Code extension yet
-- Documentation describes intended behavior and phased delivery
+Shipped today:
 
-## MVP limitations
+- Rust crates (`spice-parser`, `spice-lsp`), Tree-sitter grammar, and VS Code extension
+- Syntax diagnostics plus light semantic warnings (`spice/duplicate-name`, `spice/unknown-model`)
+- Document outline, go to definition, and find references
+- Debounced diagnostics on edit; `textDocument/references` honors `includeDeclaration`
+- Marketplace extension with bundled binaries, TextMate highlighting, and restart command
+
+## Current limitations
 
 | Limitation | Workaround |
 |------------|------------|
-| Ngspice dialect only | Avoid LTspice/HSPICE-specific syntax until v0.4 |
-| Syntax diagnostics only | Simulator catches many semantic errors at run time |
-| No hover or reference docs | Consult simulator manual; reference corpus arrives in v0.5 |
+| Ngspice-oriented parsing | Avoid LTspice/HSPICE-specific syntax until v0.4 |
+| No hover or curated reference docs | Consult simulator manual; reference corpus arrives in v0.5 |
 | No connectivity analysis | Manual review; dangling/floating checks arrive in v0.5 |
 | Single-file analysis | `.include` not followed |
-| No formatter | Manual alignment until v0.4 |
+| No formatter or completion | Manual alignment / typing until v0.3–v0.4 |
+| Comment toggle uses `*` only | `;` and `$` are highlighted as comments; VS Code allows one `lineComment` |
+| No Windows arm64 bundled binary | Set `spiceLsp.serverPath` or put `spice-lsp` on `PATH` |
 
 ## Post-MVP: dialect reference
 
@@ -49,19 +55,20 @@ These warnings supplement — not replace — simulator and layout review.
 | Comments | `*`, `;`, `$` | `$` common | `*` |
 | Directives / options | Baseline corpus | Overrides in `reference/ltspice/` | Overrides in `reference/hspice/` |
 
-Tri-dialect parsing and reference namespaces target **v0.4–v0.5**. MVP uses one dialect.
+Tri-dialect parsing and reference namespaces target **v0.4–v0.5**. Current parsing is Ngspice-oriented.
 
 ## Parser robustness
 
 - Error recovery may leave incomplete indexes until syntax is fixed
-- Very large files (> 100k lines) may need debouncing
+- Very large files still re-parse the full buffer after the debounce window
 - LSP assumes UTF-8 source
 
 ## Editor / LSP
 
 - UTF-16 positions per LSP spec
-- Stdio transport only initially
+- Stdio transport only
 - No workspace-wide symbol search until include-graph analysis exists
+- Diagnostics on `didChange` are debounced (~150 ms); navigation requests re-analyze on demand so the index stays current
 
 ## Reporting issues
 

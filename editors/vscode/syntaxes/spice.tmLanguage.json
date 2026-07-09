@@ -1,0 +1,74 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "SPICE",
+  "scopeName": "source.spice",
+  "patterns": [
+    { "include": "#comment" },
+    { "include": "#continuation" },
+    { "include": "#directive" },
+    { "include": "#instance" },
+    { "include": "#number" }
+  ],
+  "repository": {
+    "comment": {
+      "patterns": [
+        {
+          "name": "comment.line.asterisk.spice",
+          "match": "^\\s*\\*.*$"
+        },
+        {
+          "name": "comment.line.semicolon.spice",
+          "match": "^\\s*;.*$"
+        },
+        {
+          "name": "comment.line.dollar.spice",
+          "match": "^\\s*\\$.*$"
+        },
+        {
+          "name": "comment.line.trailing-dollar.spice",
+          "match": "\\$.*$"
+        }
+      ]
+    },
+    "continuation": {
+      "name": "meta.continuation.spice",
+      "match": "^\\s*\\+.*$"
+    },
+    "directive": {
+      "name": "meta.directive.spice",
+      "begin": "^\\s*(\\.[A-Za-z_][A-Za-z0-9_]*)",
+      "beginCaptures": {
+        "1": { "name": "keyword.control.directive.spice" }
+      },
+      "end": "$",
+      "patterns": [
+        { "include": "#comment" },
+        { "include": "#number" },
+        {
+          "name": "entity.name.function.spice",
+          "match": "\\b([A-Za-z_][A-Za-z0-9_$:#\\[\\]<>-]*)"
+        }
+      ]
+    },
+    "instance": {
+      "name": "meta.instance.spice",
+      "begin": "^\\s*([A-Za-z][A-Za-z0-9._$:#\\[\\]<>-]*)",
+      "beginCaptures": {
+        "1": { "name": "entity.name.type.instance.spice" }
+      },
+      "end": "$",
+      "patterns": [
+        { "include": "#comment" },
+        { "include": "#number" },
+        {
+          "name": "variable.other.node.spice",
+          "match": "\\b([A-Za-z_][A-Za-z0-9_$:#\\[\\]<>-]*|0)\\b"
+        }
+      ]
+    },
+    "number": {
+      "name": "constant.numeric.spice",
+      "match": "\\b\\d+(\\.\\d*)?([eE][+-]?\\d+)?([TtGgMmKkUuNnPpFf]|meg|mil)?\\b"
+    }
+  }
+}

@@ -20,8 +20,9 @@ Marketplace publish is automated via GitHub Actions — see [VS Code integration
 
 Ship a **VS Code extension** that starts the `spice-lsp` binary over stdio and provides:
 
-- Real-time syntax diagnostics as you edit netlists (MVP)
-- Navigation, completion, and formatting (v0.2–v0.4)
+- Real-time syntax + semantic diagnostics as you edit netlists (**shipped**)
+- Document outline, go to definition, and find references (**shipped** in v0.2)
+- Completion and formatting (v0.3–v0.4)
 - **Dialect-aware documentation on hover** — curated reference files you maintain per Ngspice / LTspice / HSPICE (v0.5)
 - **Connectivity warnings** — dangling nodes and floating nets highlighted before simulation (v0.5)
 
@@ -37,11 +38,6 @@ See [VS Code integration](docs/development/4_vscode-integration.md) and [Dialect
 git clone https://github.com/amirhosseindavoody/spice-lsp.git
 cd spice-lsp
 pixi install
-```
-
-Once the Rust workspace is added (MVP step 1):
-
-```bash
 pixi run build          # compile the LSP binary
 pixi run test           # unit and integration tests
 pixi run spice-lsp      # run the language server (stdio)
@@ -68,18 +64,17 @@ First-time setup (repository admin, after the first deploy):
 ./scripts/setup-github-pages.sh
 ```
 
-## MVP in one page
+## What v0.2 delivers
 
-The fastest path to something you can **demo in VS Code** is intentionally narrow:
-
-| MVP delivers | MVP defers |
-|--------------|------------|
+| Shipped | Still deferred |
+|---------|----------------|
 | Stdio LSP server (`initialize`, text sync, `publishDiagnostics`) | Dialect reference hover (curated `reference/` corpus) |
-| Tree-sitter parse of a single dialect (start with Ngspice) | Floating-net / dangling-node analysis |
-| Syntax diagnostics from the parse tree | Formatter, completion, navigation |
-| VS Code extension that launches the binary and shows squiggles | Multi-dialect reference libraries |
+| Tree-sitter parse (Ngspice-oriented) | Floating-net / dangling-node analysis |
+| Syntax + semantic diagnostics | Formatter and completion |
+| Document outline, go to definition, find references | Multi-dialect reference libraries |
+| VS Code extension (Marketplace, bundled binaries, highlighting) | Windows arm64 bundled binary |
 
-**Build order:** Cargo workspace → minimal grammar → LSP skeleton → sample netlist fixtures → VS Code extension → integration test that speaks JSON-RPC.
+**Build order (historical MVP):** Cargo workspace → minimal grammar → LSP skeleton → sample netlist fixtures → VS Code extension → integration test that speaks JSON-RPC.
 
 Full step-by-step instructions: [MVP guide](docs/development/2_mvp.md).
 
@@ -109,11 +104,11 @@ The book lives under `docs/` and is built with [mdBook](https://rust-lang.github
 
 Navigation: [docs/SUMMARY.md](docs/SUMMARY.md).
 
-## Project layout (target)
+## Project layout
 
 ```
 spice-lsp/
-├── Cargo.toml                 # Rust workspace root (MVP)
+├── Cargo.toml                 # Rust workspace root
 ├── crates/
 │   ├── spice-parser/          # Tree-sitter grammar + diagnostics
 │   ├── spice-reference/       # Dialect doc index (v0.5)
@@ -124,7 +119,7 @@ spice-lsp/
 │   └── hspice/
 ├── tree-sitter-spice/         # Grammar sources and queries
 ├── editors/
-│   └── vscode/                # VS Code extension (MVP client)
+│   └── vscode/                # VS Code extension
 ├── test-data/                 # Sample netlists for tests and demos
 ├── docs/                      # mdBook source
 ├── pixi.toml                  # Tasks and dependencies

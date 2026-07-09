@@ -305,6 +305,32 @@ async fn references_on_subckt_definition() {
         locations.len() >= 2,
         "expected definition + usage references, got {locations:?}"
     );
+
+    server
+        .send(json!({
+            "jsonrpc": "2.0",
+            "id": 5,
+            "method": "textDocument/references",
+            "params": {
+                "textDocument": { "uri": uri },
+                "position": { "line": line, "character": character },
+                "context": { "includeDeclaration": false }
+            }
+        }))
+        .await;
+    let response = server.read_response(5).await;
+    let without_decl = response["result"].as_array().expect("references");
+    assert_eq!(
+        without_decl.len(),
+        locations.len() - 1,
+        "includeDeclaration:false should omit the definition site"
+    );
+    assert!(
+        without_decl
+            .iter()
+            .all(|loc| loc["range"]["start"]["line"] != 1),
+        "definition line must be excluded when includeDeclaration is false: {without_decl:?}"
+    );
     server.shutdown().await;
 }
 

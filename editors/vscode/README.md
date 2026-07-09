@@ -16,13 +16,14 @@ If nothing happens after opening a file, check **Output → SPICE Language Serve
 
 ## Features
 
+- **Syntax highlighting** — comments (`*` / `;` / `$`), directives, instances, and numbers
 - **Syntax diagnostics** — unclosed `.subckt` blocks, parse errors, and related issues
 - **Semantic warnings** — duplicate component names, undefined model/subcircuit references
 - **Document outline** — hierarchical view of subcircuits, models, parameters, and instances
 - **Go to definition** — jump from subcircuit references to `.subckt` definitions
 - **Find references** — list all usages of a subcircuit, model, or parameter
 
-Supported file extensions: `.cir`, `.sp`, `.net`, `.ckt`.
+Supported file extensions: `.cir`, `.sp`, `.net`, `.ckt`. Toggle Comment uses `*` (VS Code allows one line-comment marker); `;` and `$` still highlight as comments.
 
 ## Bundled platforms
 
