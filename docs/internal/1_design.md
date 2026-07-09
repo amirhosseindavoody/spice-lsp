@@ -112,7 +112,7 @@ Distribution path:
 
 Extension architecture (thin Node client, Rust server): [VS Code integration](../development/4_vscode-integration.md).
 
-Post-MVP features roll out in phases documented in [Architecture](../4_architecture.md) and [LSP features](../5_lsp-features.md). Deep semantics (reference library + net connectivity) are specified in [Dialect reference and net semantics](../8_dialect-reference-and-semantics.md).
+Post-MVP features roll out in phases documented in [Architecture](../4_architecture.md) and [LSP features](../5_lsp-features.md). Deep semantics (reference library + net connectivity) are specified in [Dialect reference and net semantics](../8_dialect-reference-and-semantics.md). Multi-dialect selection, corpus authoring, and hover reuse are specified in [Multi-dialect support](2_multi-dialect-design.md).
 
 ### 4.0.5 Post-MVP roadmap (summary)
 
