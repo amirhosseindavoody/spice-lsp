@@ -3,7 +3,7 @@
   "displayName": "SPICE Language Support",
   "description": "Language support for SPICE circuit simulation netlists — syntax diagnostics, outline, go to definition, and find references.",
   "version": "0.2.0",
-  "publisher": "amirhosseindavoody",
+  "publisher": "AmirhosseinDavoody",
   "license": "MIT",
   "repository": {
     "type": "git",

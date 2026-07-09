@@ -2,7 +2,7 @@
 
 Language server and formatter for [SPICE](https://en.wikipedia.org/wiki/SPICE) circuit simulation netlists.
 
-**Current status:** v0.2 — syntax + semantic diagnostics, document outline, go to definition, find references; VS Code extension with bundled binaries and Marketplace release workflow.
+**Current status:** v0.2 — syntax + semantic diagnostics, document outline, go to definition, find references; VS Code extension with bundled binaries; Marketplace publish on each push to `main`.
 
 ## VS Code extension
 

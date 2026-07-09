@@ -1,22 +1,125 @@
 name: Release VS Code extension
 
 on:
+  push:
+    branches:
+      - main
+    tags:
+      - "vscode-v*"
   workflow_dispatch:
     inputs:
       publish:
         description: Publish to VS Code Marketplace (requires VSCE_PAT secret)
         type: boolean
+        default: true
+      bump:
+        description: Bump patch version in editors/vscode/package.json before packaging
+        type: boolean
         default: false
-  push:
-    tags:
-      - "vscode-v*"
+
+# Only one release at a time (Marketplace rejects duplicate versions).
+concurrency:
+  group: release-vscode
+  cancel-in-progress: false
 
 permissions:
   contents: write
 
 jobs:
+  prepare:
+    name: Prepare version
+    # Skip bot version-bump commits (defense in depth; GITHUB_TOKEN pushes
+    # normally do not re-trigger workflows).
+    if: >-
+      github.event_name != 'push' ||
+      github.ref_type == 'tag' ||
+      !contains(github.event.head_commit.message, 'chore(vscode): bump extension')
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      sha: ${{ steps.version.outputs.sha }}
+      should_publish: ${{ steps.flags.outputs.should_publish }}
+      create_release: ${{ steps.flags.outputs.create_release }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Decide release flags
+        id: flags
+        shell: bash
+        run: |
+          should_publish=false
+          create_release=false
+          should_bump=false
+
+          if [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/main" ]]; then
+            should_publish=true
+            create_release=true
+            should_bump=true
+          elif [[ "${{ github.event_name }}" == "push" && "${{ github.ref_type }}" == "tag" ]]; then
+            # Manual tag push from a developer machine (not GITHUB_TOKEN).
+            should_publish=true
+            create_release=true
+          elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            if [[ "${{ inputs.publish }}" == "true" ]]; then
+              should_publish=true
+            fi
+            if [[ "${{ inputs.bump }}" == "true" ]]; then
+              should_bump=true
+              create_release=true
+            fi
+          fi
+
+          echo "should_publish=${should_publish}" >> "$GITHUB_OUTPUT"
+          echo "create_release=${create_release}" >> "$GITHUB_OUTPUT"
+          echo "should_bump=${should_bump}" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Bump patch version
+        if: steps.flags.outputs.should_bump == 'true'
+        working-directory: editors/vscode
+        run: npm version patch --no-git-tag-version
+
+      - name: Commit and push version bump
+        if: steps.flags.outputs.should_bump == 'true'
+        shell: bash
+        run: |
+          if [[ "${{ github.ref }}" != "refs/heads/main" ]]; then
+            echo "Version bump is only allowed on main (current ref: ${{ github.ref }})." >&2
+            exit 1
+          fi
+          version="$(node -p "require('./editors/vscode/package.json').version")"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add editors/vscode/package.json editors/vscode/package-lock.json
+          if git diff --staged --quiet; then
+            echo "No version changes to commit."
+          else
+            git commit -m "chore(vscode): bump extension to ${version}"
+            # GITHUB_TOKEN pushes do not re-trigger workflows.
+            git push origin HEAD:main
+          fi
+
+      - name: Resolve version and commit
+        id: version
+        shell: bash
+        run: |
+          version="$(node -p "require('./editors/vscode/package.json').version")"
+          sha="$(git rev-parse HEAD)"
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "sha=${sha}" >> "$GITHUB_OUTPUT"
+          echo "Extension version: ${version} @ ${sha}"
+
   build-binary:
     name: Build ${{ matrix.platform }}
+    needs: prepare
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -46,6 +149,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.sha }}
 
       - name: Install Linux cross toolchain
         if: matrix.platform == 'linux-arm64'
@@ -91,11 +196,13 @@ jobs:
 
   package:
     name: Package VSIX
-    needs: build-binary
+    needs: [prepare, build-binary]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.sha }}
 
       - name: Set up pixi
         uses: prefix-dev/setup-pixi@v0.8.9
@@ -122,23 +229,21 @@ jobs:
           if-no-files-found: error
 
       - name: Attach VSIX to GitHub Release
-        if: startsWith(github.ref, 'refs/tags/vscode-v')
+        if: needs.prepare.outputs.create_release == 'true'
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: vscode-v${{ needs.prepare.outputs.version }}
+          name: VS Code extension v${{ needs.prepare.outputs.version }}
+          target_commitish: ${{ needs.prepare.outputs.sha }}
           files: editors/vscode/*.vsix
           generate_release_notes: true
 
   publish:
     name: Publish to Marketplace
-    needs: package
-    if: >-
-      (github.event_name == 'workflow_dispatch' && inputs.publish) ||
-      startsWith(github.ref, 'refs/tags/vscode-v')
+    needs: [prepare, package]
+    if: needs.prepare.outputs.should_publish == 'true'
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
       - name: Download VSIX
         uses: actions/download-artifact@v4
         with:
@@ -150,7 +255,7 @@ jobs:
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
         run: |
           if [[ -z "$VSCE_PAT" ]]; then
-            echo "VSCE_PAT secret is not configured; skipping Marketplace publish." >&2
+            echo "VSCE_PAT secret is not configured; cannot publish to Marketplace." >&2
             exit 1
           fi
           npm install -g @vscode/vsce

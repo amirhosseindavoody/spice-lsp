@@ -222,13 +222,14 @@ code --install-extension editors/vscode/spice-lsp-0.2.0.vsix
 
 ### CI release workflow
 
-The [Release VS Code extension](../../.github/workflows/release-vscode.yml) workflow:
+The [Release VS Code extension](../../.github/workflows/release-vscode.yml) workflow runs on every push to `main` (and on manual `workflow_dispatch` / `vscode-v*` tags):
 
-1. Cross-compiles `spice-lsp` for all supported platform ids
-2. Assembles a single `.vsix` containing every platform binary
-3. Uploads the VSIX as a GitHub Actions artifact
-4. On tag push `vscode-v*`, attaches the VSIX to a GitHub Release
-5. Publishes to the VS Code Marketplace when `VSCE_PAT` is configured
+1. Bumps the patch version in `editors/vscode/package.json` and commits it to `main`
+2. Cross-compiles `spice-lsp` for all supported platform ids
+3. Assembles a single `.vsix` containing every platform binary
+4. Uploads the VSIX as a GitHub Actions artifact
+5. Creates a GitHub Release tagged `vscode-v<version>`
+6. Publishes to the VS Code Marketplace (`VSCE_PAT` required)
 
 | Strategy | Pros | Cons |
 |----------|------|------|
@@ -263,22 +264,52 @@ Tree-sitter-based highlighting via `nvim-treesitter` is separate; VS Code can ad
 
 ### One-time Marketplace setup
 
-1. Create a [Visual Studio Marketplace publisher](https://marketplace.visualstudio.com/manage) (this repo uses publisher id `amirhosseindavoody`).
-2. Create a [Personal Access Token](https://dev.azure.com/) with **Marketplace > Manage** scope.
-3. Add the token as repository secret **`VSCE_PAT`** in GitHub → Settings → Secrets.
+Do this once before the first CI publish succeeds:
 
-### Release from CI
+1. Sign in to the [Visual Studio Marketplace publisher management](https://marketplace.visualstudio.com/manage) page with a Microsoft account.
+2. Create a publisher whose **Publisher ID** matches `editors/vscode/package.json` (`AmirhosseinDavoody` in this repo). The ID is permanent and must match exactly.
+3. Create a Personal Access Token in **Azure DevOps** (not [portal.azure.com](https://portal.azure.com)):
+   1. Open [https://dev.azure.com](https://dev.azure.com) and sign in with the **same Microsoft account** used for the Marketplace publisher.
+   2. If prompted, create a free Azure DevOps organization (any name is fine; it is only a container for the PAT).
+   3. Click your profile avatar (top right) → **Personal access tokens**  
+      Direct link: [https://dev.azure.com/_usersSettings/tokens](https://dev.azure.com/_usersSettings/tokens)
+   4. **+ New Token**:
+      - Name: e.g. `vscode-marketplace`
+      - Organization: **All accessible organizations**
+      - Expiration: choose a duration you are willing to rotate
+      - Scopes: **Custom defined** → enable **Marketplace → Manage**
+   5. Create and **copy the token immediately** (it is shown once)
+4. In the GitHub repo: **Settings → Secrets and variables → Actions → New repository secret**
+   - Name: `VSCE_PAT`
+   - Value: the Azure DevOps PAT from step 3
+5. Confirm Marketplace listing metadata is ready in `editors/vscode/`:
+   - `README.md` (Marketplace landing page)
+   - `LICENSE` (`MIT` matches `package.json`)
+   - `publisher`, `displayName`, `description`, `engines.vscode`
 
-Push a tag to publish (builds all platform binaries, packages VSIX, publishes):
+Optional local dry-run before relying on CI:
 
 ```bash
-git tag vscode-v0.2.0
-git push origin vscode-v0.2.0
+pixi run build
+pixi run ext-package
+cd editors/vscode
+npx vsce package --no-dependencies   # validates packaging without publishing
 ```
 
-Or run **Release VS Code extension** manually from the Actions tab. Enable **Publish to VS Code Marketplace** to call `vsce publish` (requires `VSCE_PAT`).
+### Release from CI (automatic)
 
-The workflow always uploads the `.vsix` as an Actions artifact even when publish is skipped.
+Every push to `main` runs **Release VS Code extension**:
+
+1. Patch-bumps `editors/vscode/package.json` (e.g. `0.2.0` → `0.2.1`)
+2. Commits `chore(vscode): bump extension to <version>` (via `GITHUB_TOKEN`, which does not re-trigger the workflow)
+3. Builds platform binaries, packages the VSIX, creates GitHub Release `vscode-v<version>`, and runs `vsce publish`
+
+Manual options:
+
+- **Actions tab → Release VS Code extension → Run workflow** — optional bump + publish flags
+- Push a tag `vscode-v*` from your machine to publish the version already in `package.json` (no auto-bump)
+
+The workflow always uploads the `.vsix` as an Actions artifact.
 
 ### Release manually
 
@@ -286,16 +317,18 @@ The workflow always uploads the `.vsix` as an Actions artifact even when publish
 pixi run build
 pixi run ext-package
 cd editors/vscode
+# bump version first if this version was already published
+npm version patch --no-git-tag-version
 npx vsce publish --no-dependencies   # requires VSCE_PAT in the environment
 ```
 
 Pre-publish checklist:
 
+- [ ] Publisher ID matches `package.json` `publisher` field
+- [ ] `VSCE_PAT` repository secret configured
 - [ ] `README.md` describes bundled-binary behavior for end users
 - [ ] `LICENSE` aligned with repo (`MIT` in `package.json`)
-- [ ] Extension version bumped in `editors/vscode/package.json`
 - [ ] `engines.vscode` set to tested minimum version
-- [ ] `VSCE_PAT` secret configured for CI publish
 
 ## Troubleshooting
 

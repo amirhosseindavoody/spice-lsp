@@ -1,6 +1,6 @@
 # Introduction
 
-**Last verified against:** v0.2 — VS Code extension with bundled binaries and Marketplace release workflow
+**Last verified against:** v0.2 — VS Code extension with bundled binaries; Marketplace publish on each push to `main`
 
 spice-lsp is a language server and formatter for SPICE circuit simulation netlists. The **end goal** is a VS Code extension that provides real-time diagnostics, dialect-aware documentation on hover, navigation, formatting, and connectivity warnings while editing `.cir`, `.sp`, and related files.
 
