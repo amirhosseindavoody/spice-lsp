@@ -144,3 +144,7 @@ pixi run <task>                 # run a defined task
 Do not hand-edit dependency versions in `pixi.toml`; use the pixi CLI.
 
 See [Build](docs/development/1_build.md) for pixi tasks, CI, and release builds.
+
+## License
+
+MIT — see [LICENSE](LICENSE).
