@@ -1,0 +1,12 @@
+{
+  "id": "hspice.directive.end",
+  "kind": "directive",
+  "name": ".end",
+  "summary": "Terminate the netlist (HSPICE)",
+  "syntax": ".END [comment]",
+  "parameters": [
+    { "name": "comment", "description": "Optional comment, often the deck name." }
+  ],
+  "examples": [".END", ".END inverter_tb"],
+  "dialectNotes": "Also closes any open .ALTER sequences. Statements after .END are ignored."
+}

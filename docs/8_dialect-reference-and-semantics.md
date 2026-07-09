@@ -105,9 +105,9 @@ Prefer small, focused files over one giant manual. Link related entries with `se
 | Phase | Reference scope |
 |-------|-----------------|
 | MVP | None |
-| v0.3 | Inline hover from CST only (pin order, subcircuit params from the file) |
-| **v0.5** | Full dialect reference lookup for directives, options, elements |
-| v0.5+ | LTspice / HSPICE corpora grow incrementally |
+| v0.3 | Inline hover from CST + curated `reference/` lookup (HSPICE overlays for `.data` / `.dc` / `.op` and common controls) |
+| **v0.5** | Broader dialect coverage + connectivity analysis |
+| v0.5+ | LTspice / remaining HSPICE constructs grow incrementally |
 
 ---
 

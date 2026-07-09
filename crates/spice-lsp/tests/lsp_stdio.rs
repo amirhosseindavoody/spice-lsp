@@ -271,6 +271,61 @@ async fn hover_on_tran_ngspice_corpus() {
 }
 
 #[tokio::test]
+async fn hover_on_hspice_dc_and_data() {
+    let uri = "file:///test/dc-data.cir";
+    let source = "* demo\n.data load rload\n+ 1k\n.enddata\n.dc DATA=load\n.end\n";
+
+    let mut server = LspProcess::spawn().await;
+    handshake_with_dialect(&mut server, "hspice").await;
+    server
+        .send(json!({
+            "jsonrpc": "2.0",
+            "method": "textDocument/didOpen",
+            "params": {
+                "textDocument": {
+                    "uri": uri,
+                    "languageId": "spice",
+                    "version": 1,
+                    "text": source
+                }
+            }
+        }))
+        .await;
+    let _ = server
+        .read_notification("textDocument/publishDiagnostics")
+        .await;
+
+    for (idx, (needle, expect_id_fragment)) in [("data", "data"), ("dc", "dc")]
+        .into_iter()
+        .enumerate()
+    {
+        let offset = source.find(needle).expect(needle);
+        let (line, character) = byte_offset_to_line_col(&source, offset);
+        let id = 20 + idx as u64;
+        server
+            .send(json!({
+                "jsonrpc": "2.0",
+                "id": id,
+                "method": "textDocument/hover",
+                "params": {
+                    "textDocument": { "uri": uri },
+                    "position": { "line": line, "character": character }
+                }
+            }))
+            .await;
+        let response = server.read_response(id).await;
+        let value = response["result"]["contents"]["value"]
+            .as_str()
+            .expect("hover markdown");
+        assert!(
+            value.contains("HSPICE") && value.to_ascii_lowercase().contains(expect_id_fragment),
+            "unexpected hover for {needle}: {value}"
+        );
+    }
+    server.shutdown().await;
+}
+
+#[tokio::test]
 async fn document_symbol_returns_subckt_outline() {
     let uri = "file:///test/subckt.cir";
     let source = fixture("valid/subckt.cir");

@@ -1,0 +1,14 @@
+{
+  "id": "shared.directive.dc",
+  "kind": "directive",
+  "name": ".dc",
+  "summary": "DC sweep analysis",
+  "syntax": ".dc srcname start stop step",
+  "parameters": [
+    { "name": "srcname", "description": "Independent source, parameter, or TEMP to sweep." },
+    { "name": "start", "description": "Sweep start value." },
+    { "name": "stop", "description": "Sweep stop value." },
+    { "name": "step", "description": "Increment between points." }
+  ],
+  "examples": [".dc V1 0 5 0.1", ".dc TEMP 0 100 25"]
+}

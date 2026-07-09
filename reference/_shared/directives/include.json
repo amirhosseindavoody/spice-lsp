@@ -1,0 +1,12 @@
+{
+  "id": "shared.directive.include",
+  "kind": "directive",
+  "name": ".include",
+  "summary": "Include another netlist file",
+  "syntax": ".include 'filename'",
+  "parameters": [
+    { "name": "filename", "description": "Path to the file to include (quotes recommended)." }
+  ],
+  "examples": [".include 'models.inc'", ".inc 'corners/tt.sp'"],
+  "seeAlso": ["shared.directive.model"]
+}

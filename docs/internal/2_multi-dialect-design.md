@@ -311,6 +311,7 @@ TextMate grammar stays shared initially; dialect-specific highlighting can wait.
 ### Phase B — Reference crate + hover
 
 - Stand up `reference/` schema + `_shared` + starter `hspice` / `ngspice` entries (small set: `.subckt`, `.ends`, `.model`, `.param`, `.tran`, `R`, `C`, `X`).
+- Grow HSPICE overlays for analysis/control directives requested in follow-ups (`.data`, multi-mode `.dc`, `.op`, plus `.ac` / `.measure` / `.probe` / `.lib` / …).
 - `spice-reference` crate + validate/codegen pixi tasks.
 - Implement `textDocument/hover` with layered resolution.
 - Snapshot tests per dialect.
@@ -373,6 +374,7 @@ Issue #16 is satisfied by **Phase A + a clear path through B**; B can ship in th
 - [x] `DialectProfile` + Ngspice parity tests under `ngspice`
 - [x] Update [LSP features](../5_lsp-features.md), [limitations](../7_limitations.md), Marketplace README for default HSPICE
 - [x] Scaffold `reference/schema.json`, `_shared/`, `hspice/`, `ngspice/`
+- [x] Expand HSPICE corpus: `.data`, `.dc` (sweep modes), `.op`, plus common controls (`.ac`, `.measure`, `.probe`, `.lib`, …)
 - [x] `spice-reference` + validate/codegen tasks
 - [x] Hover provider + snapshots
 - [x] Close #16 when Phase A is shipped and Phase B is scheduled/linked

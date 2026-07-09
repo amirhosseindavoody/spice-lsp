@@ -1,0 +1,14 @@
+{
+  "id": "hspice.directive.lib",
+  "kind": "directive",
+  "name": ".lib",
+  "summary": "Call a named library section (HSPICE)",
+  "syntax": ".LIB 'filename' entryname",
+  "parameters": [
+    { "name": "filename", "description": "Library file path." },
+    { "name": "entryname", "description": "Section name inside the library (.LIB entry … .ENDL)." }
+  ],
+  "examples": [".LIB 'models.lib' TT", ".LIB '/pdk/hspice/models' FF"],
+  "seeAlso": ["hspice.directive.include", "shared.directive.model"],
+  "dialectNotes": "Library files define sections with .LIB entryname … .ENDL entryname. Nested .LIB calls are supported up to a limited depth."
+}

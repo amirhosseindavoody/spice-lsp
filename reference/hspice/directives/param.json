@@ -1,0 +1,18 @@
+{
+  "id": "hspice.directive.param",
+  "kind": "directive",
+  "name": ".param",
+  "summary": "Define parameters and expressions (HSPICE)",
+  "syntax": ".PARAM name=value [name2=value2 ...]",
+  "parameters": [
+    { "name": "name", "description": "Parameter identifier." },
+    { "name": "value", "description": "Number, 'algebraic expression', distribution function, or str('…')." }
+  ],
+  "examples": [
+    ".PARAM vdd=1.8 rload=10k",
+    ".PARAM cload='2*cunit'",
+    ".PARAM tox=agauss(3n,0.1n,3)"
+  ],
+  "seeAlso": ["hspice.directive.data", "hspice.directive.alter"],
+  "dialectNotes": "HSPICE allows quoted expressions and statistical distributions (GAUSS/AGAUSS/…) used with Monte Carlo. Parameters referenced by .DATA columns must be declared here."
+}

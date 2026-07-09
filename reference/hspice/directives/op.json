@@ -1,0 +1,21 @@
+{
+  "id": "hspice.directive.op",
+  "kind": "directive",
+  "name": ".op",
+  "summary": "DC operating-point report (HSPICE)",
+  "syntax": ".OP [format [time ...]]",
+  "parameters": [
+    {
+      "name": "format",
+      "description": "Optional report style: ALL, BRIEF, CURRENT, DEBUG, NONE, VOLTAGE."
+    },
+    {
+      "name": "time",
+      "description": "Optional time(s) for reporting during transient (with ALL/VOLTAGE/CURRENT/DEBUG).",
+      "units": "s"
+    }
+  ],
+  "examples": [".OP", ".OP BRIEF", ".OP ALL 10n"],
+  "seeAlso": ["hspice.directive.dc", "hspice.directive.ic", "hspice.directive.nodeset"],
+  "dialectNotes": "HSPICE often prints bias automatically with other analyses; use .OP when you only need the operating point, or to request a formatted report at specific times."
+}

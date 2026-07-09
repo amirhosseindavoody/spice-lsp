@@ -28,10 +28,11 @@ Shipped today:
 
 ## Post-MVP: dialect reference
 
-The reference library under `reference/` will grow **incrementally**:
+The reference library under `reference/` grows **incrementally**:
 
-- Early v0.5 may document only common directives and elements for Ngspice
-- LTspice and HSPICE entries added over time; missing entry → no hover (not an error)
+- Shared baseline covers common directives (`.subckt`, `.tran`, `.dc`, `.op`, `.ac`, …) and elements (`R`, `C`, `X`)
+- **HSPICE** overlays expand analysis/control docs (`.data`, multi-mode `.dc`, `.op`, `.measure`, `.probe`, `.lib`, …) — see [Dialect reference catalog](reference/README.md)
+- LTspice remains a stub corpus; missing entry → no hover (not an error)
 - Reference describes **language** constructs, not simulator version release notes
 
 See [Dialect reference and net semantics](8_dialect-reference-and-semantics.md).

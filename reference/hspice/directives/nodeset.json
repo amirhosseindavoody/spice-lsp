@@ -1,0 +1,13 @@
+{
+  "id": "hspice.directive.nodeset",
+  "kind": "directive",
+  "name": ".nodeset",
+  "summary": "Suggest initial guesses for DC convergence (HSPICE)",
+  "syntax": ".NODESET V(node)=value [V(node2)=value2 ...]",
+  "parameters": [
+    { "name": "V(node)", "description": "Node voltage guess for the DC solution.", "units": "V" }
+  ],
+  "examples": [".NODESET V(out)=0.9", ".NODESET V(n1)=0 V(n2)=1.8"],
+  "seeAlso": ["hspice.directive.ic", "hspice.directive.op"],
+  "dialectNotes": "Unlike .IC, .NODESET is a soft hint for finding the operating point, not a hard initial condition for transient UIC."
+}

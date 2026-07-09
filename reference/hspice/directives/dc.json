@@ -1,0 +1,24 @@
+{
+  "id": "hspice.directive.dc",
+  "kind": "directive",
+  "name": ".dc",
+  "summary": "DC analysis and sweeps (HSPICE)",
+  "syntax": ".DC var1 start1 stop1 incr1\n.DC var1 START=start1 STOP=stop1 STEP=incr1\n.DC var1 start1 stop1 incr1 [SWEEP] var2 start2 stop2 incr2\n.DC var1 type np start1 stop1\n.DC DATA=datanm\n.DC MONTE=val",
+  "parameters": [
+    { "name": "var1", "description": "Primary sweep variable: independent source, element/model parameter, or TEMP." },
+    { "name": "start1 / stop1 / incr1", "description": "Linear sweep bounds and step (positional or START=/STOP=/STEP=)." },
+    { "name": "type np", "description": "LIN|DEC|OCT with point count for parameterized / nested sweeps." },
+    { "name": "SWEEP var2 …", "description": "Optional nested (second) sweep over another source or parameter." },
+    { "name": "DATA=datanm", "description": "Data-driven sweep using a .DATA block." },
+    { "name": "MONTE=val", "description": "Monte Carlo DC analysis." }
+  ],
+  "examples": [
+    ".DC Vgs 0 1.8 0.1",
+    ".DC Vds 0 1.8 0.05 SWEEP Vgs 0 1.8 0.3",
+    ".DC TEMP START=0 STOP=100 STEP=25",
+    ".DC DATA=corner_table",
+    ".DC MONTE=100"
+  ],
+  "seeAlso": ["hspice.directive.data", "shared.directive.op", "hspice.directive.print"],
+  "dialectNotes": "HSPICE extends classic SPICE .DC with keyword START/STOP/STEP, nested SWEEP, DATA= tables, and MONTE=. Prefer DATA= for multi-parameter corner tables."
+}

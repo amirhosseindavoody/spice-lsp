@@ -1,0 +1,14 @@
+{
+  "id": "shared.directive.ac",
+  "kind": "directive",
+  "name": ".ac",
+  "summary": "Small-signal AC frequency analysis",
+  "syntax": ".ac {LIN|DEC|OCT} np fstart fstop",
+  "parameters": [
+    { "name": "LIN|DEC|OCT", "description": "Linear, decade, or octave frequency spacing." },
+    { "name": "np", "description": "Number of points (LIN) or points per decade/octave (DEC/OCT)." },
+    { "name": "fstart", "description": "Start frequency.", "units": "Hz" },
+    { "name": "fstop", "description": "Stop frequency.", "units": "Hz" }
+  ],
+  "examples": [".ac DEC 10 1k 1G", ".ac LIN 100 1 1Meg"]
+}

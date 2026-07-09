@@ -1,0 +1,14 @@
+{
+  "id": "hspice.directive.tf",
+  "kind": "directive",
+  "name": ".tf",
+  "summary": "DC small-signal transfer function (HSPICE)",
+  "syntax": ".TF outvar srcnam",
+  "parameters": [
+    { "name": "outvar", "description": "Output variable, e.g. V(out) or I(Vload)." },
+    { "name": "srcnam", "description": "Independent input source name." }
+  ],
+  "examples": [".TF V(out) Vin", ".TF I(Vmeas) Iin"],
+  "seeAlso": ["hspice.directive.op", "hspice.directive.dc"],
+  "dialectNotes": "Reports transfer gain plus small-signal input and output resistances."
+}
