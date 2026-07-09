@@ -56,7 +56,7 @@ reference/
     └── …
 ```
 
-Start with **Ngspice**; add LTspice and HSPICE directories as you author content. Entries can override or extend a shared base where dialects agree.
+Author **HSPICE** and **Ngspice** first (HSPICE is the extension default — see [Multi-dialect design](internal/2_multi-dialect-design.md)); add LTspice as the corpus grows. Entries can override or extend `_shared/` where dialects agree.
 
 ### Entry format (draft)
 
@@ -83,7 +83,7 @@ The Rust crate `spice-reference` (or a module in `spice-parser`) loads and index
 
 ### LSP integration
 
-1. Client sends active dialect via `initializationOptions` or `spiceLsp.dialect` setting.
+1. Client sends active dialect via `initializationOptions` or `spiceLsp.dialect` setting (default **`hspice`**; command + status bar to switch — [design](internal/2_multi-dialect-design.md)).
 2. On `textDocument/hover`, the server maps the cursor CST node to a reference key (e.g. directive name, element letter, option token).
 3. Server renders `Hover` markdown from the entry: summary, syntax block, parameter table, examples.
 4. Missing entry → no hover (or a one-line fallback from the parse tree). **Gaps are filled by adding reference files**, not hard-coding strings in Rust.

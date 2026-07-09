@@ -18,7 +18,8 @@ Shipped today:
 | Limitation | Workaround |
 |------------|------------|
 | Ngspice-oriented parsing | Avoid LTspice/HSPICE-specific syntax until v0.4 |
-| No hover or curated reference docs | Consult simulator manual; reference corpus arrives in v0.5 |
+| No hover or curated reference docs | Consult simulator manual; corpus + hover per [Multi-dialect design](internal/2_multi-dialect-design.md) |
+| No dialect setting yet | Planned default **HSPICE** with Ngspice retained; see issue #16 design |
 | No connectivity analysis | Manual review; dangling/floating checks arrive in v0.5 |
 | Single-file analysis | `.include` not followed |
 | No formatter or completion | Manual alignment / typing until v0.3–v0.4 |

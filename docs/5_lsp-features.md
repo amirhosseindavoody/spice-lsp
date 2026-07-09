@@ -95,9 +95,15 @@ Diagnostics from `didChange` are **debounced** (~150 ms) so rapid typing does no
 
 **Hover (file-local only):** subcircuit port order, parameters from `.model` / `.subckt` in the open buffer. No curated reference yet — that is v0.5.
 
-## v0.4 — Formatting and dialect
+## Dialect selection (issue #16)
 
-Registers `documentFormattingProvider`. Dialect setting (`ngspice` | `ltspice` | `hspice`) selects grammar and reference namespace.
+`spiceLsp.dialect` is `hspice` \| `ngspice` \| `ltspice` (default **`hspice`**). The VS Code command **SPICE LSP: Set Dialect…** and a status-bar item change it. The same dialect selects the reference corpus for hover and (later) completion docs.
+
+Design: [Multi-dialect support](internal/2_multi-dialect-design.md).
+
+## v0.4 — Formatting
+
+Registers `documentFormattingProvider`. Formatter profiles may follow the active dialect later.
 
 See [Formatter](6_formatter.md).
 
@@ -126,7 +132,7 @@ Published alongside syntax diagnostics in `publishDiagnostics`. Configurable via
 
 | Setting | Type | Default | Available |
 |---------|------|---------|-----------|
-| `spiceLsp.dialect` | string | `"ngspice"` | v0.4+ |
+| `spiceLsp.dialect` | string | `"hspice"` | dialect switch (see [Multi-dialect design](internal/2_multi-dialect-design.md)) |
 | `spiceLsp.diagnostics.danglingNodes` | boolean | `true` | v0.5+ |
 | `spiceLsp.diagnostics.floatingNets` | boolean | `true` | v0.5+ |
 | `spiceLsp.groundNodes` | string[] | `["0","gnd","GND"]` | v0.5+ |
