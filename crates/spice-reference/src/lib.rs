@@ -1,5 +1,9 @@
 //! Curated SPICE dialect reference corpus for hover and completion.
 
+mod catalog;
+
+pub use catalog::{generate_catalog_files, render_dialect_catalog, CatalogMode};
+
 use std::collections::HashMap;
 use std::sync::OnceLock;
 
@@ -149,6 +153,57 @@ impl ReferenceIndex {
 
     pub fn is_empty(&self) -> bool {
         self.entries.is_empty()
+    }
+
+    /// All embedded entries as `(corpus_key, entry)` where corpus_key is
+    /// `shared`, `hspice`, `ngspice`, or `ltspice`.
+    pub fn iter_raw(&self) -> impl Iterator<Item = (&str, &str, &ReferenceEntry)> {
+        self.entries.iter().map(|((corpus, kind, _), entry)| {
+            (corpus.as_str(), kind.as_str(), entry)
+        })
+    }
+
+    /// Effective entries for a dialect: shared base overlaid by dialect-specific
+    /// entries (dialect wins on normalized name + kind).
+    pub fn effective_entries(&self, dialect: Dialect) -> Vec<(bool, &ReferenceEntry)> {
+        let mut by_key: HashMap<(String, String), (bool, &ReferenceEntry)> = HashMap::new();
+
+        for ((corpus, kind, name), entry) in &self.entries {
+            if corpus == "shared" {
+                by_key.insert((kind.clone(), name.clone()), (false, entry));
+            }
+        }
+        let dialect_id = dialect.id();
+        for ((corpus, kind, name), entry) in &self.entries {
+            if corpus == dialect_id {
+                by_key.insert((kind.clone(), name.clone()), (true, entry));
+            }
+        }
+
+        let mut out: Vec<_> = by_key.into_values().collect();
+        out.sort_by(|a, b| {
+            a.1.kind
+                .cmp(&b.1.kind)
+                .then(a.1.name.to_ascii_lowercase().cmp(&b.1.name.to_ascii_lowercase()))
+                .then(a.1.id.cmp(&b.1.id))
+        });
+        out
+    }
+
+    /// Entries that live only in the shared corpus (for the Shared catalog page).
+    pub fn shared_entries(&self) -> Vec<&ReferenceEntry> {
+        let mut out: Vec<_> = self
+            .entries
+            .iter()
+            .filter(|((corpus, _, _), _)| corpus == "shared")
+            .map(|(_, entry)| entry)
+            .collect();
+        out.sort_by(|a, b| {
+            a.kind
+                .cmp(&b.kind)
+                .then(a.name.to_ascii_lowercase().cmp(&b.name.to_ascii_lowercase()))
+        });
+        out
     }
 }
 

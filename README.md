@@ -99,6 +99,7 @@ The book lives under `docs/` and is built with [mdBook](https://rust-lang.github
 | [Getting started](docs/2_getting-started.md) | Setup, pixi workflow, first run |
 | [Architecture](docs/4_architecture.md) | Crates, phased rollout (MVP → v0.5) |
 | [Dialect reference and net semantics](docs/8_dialect-reference-and-semantics.md) | Curated docs + floating/dangling analysis (post-MVP) |
+| [Dialect reference catalog](docs/reference/README.md) | Generated mdBook pages from `reference/` JSON |
 | [MVP guide](docs/development/2_mvp.md) | Minimal implementation before more features |
 | [VS Code integration](docs/development/4_vscode-integration.md) | Extension structure and publishing |
 | [Design (internal)](docs/internal/1_design.md) | Requirements and capability spec |

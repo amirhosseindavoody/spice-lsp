@@ -6,6 +6,10 @@ license.workspace = true
 authors.workspace = true
 description = "Curated SPICE dialect reference corpus for hover and completion"
 
+[[bin]]
+name = "spice-reference-catalog"
+path = "src/bin/catalog.rs"
+
 [dependencies]
 serde = { workspace = true }
 serde_json = { workspace = true }
