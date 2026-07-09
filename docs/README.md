@@ -2,7 +2,7 @@
 
 **Last verified against:** v0.2 — VS Code extension with bundled binaries, TextMate highlighting, and Marketplace icon; debounced diagnostics; `references` honors `includeDeclaration`; Marketplace publish on each push to `main`
 
-spice-lsp is a language server and formatter for SPICE circuit simulation netlists. The **end goal** is a VS Code extension that provides real-time diagnostics, dialect-aware documentation on hover, navigation, formatting, and connectivity warnings while editing `.cir`, `.sp`, and related files.
+spice-lsp is a language server and formatter for SPICE circuit simulation netlists. The **end goal** is a VS Code extension that provides real-time diagnostics, dialect-aware documentation on hover, navigation, formatting, and connectivity warnings while editing `.cir`, `.sp`, `.spf`, and related files.
 
 This book is generated with [mdBook](https://rust-lang.github.io/mdBook/) from the `docs/` directory.
 

@@ -43,6 +43,7 @@
         "extensions": [
           ".cir",
           ".sp",
+          ".spf",
           ".net",
           ".ckt"
         ],

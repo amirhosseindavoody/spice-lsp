@@ -417,6 +417,46 @@ async fn valid_netlist_publishes_no_diagnostics() {
 }
 
 #[tokio::test]
+async fn sp_and_spf_uris_publish_diagnostics() {
+    // Extension maps .sp / .spf → language id `spice`; the server is URI-agnostic.
+    for (uri, fixture_name) in [
+        ("file:///test/simple-rc.sp", "valid/simple-rc.sp"),
+        ("file:///test/simple-rc.spf", "valid/simple-rc.spf"),
+    ] {
+        let source = fixture(fixture_name);
+        let mut server = LspProcess::spawn().await;
+        handshake(&mut server).await;
+        server
+            .send(json!({
+                "jsonrpc": "2.0",
+                "method": "textDocument/didOpen",
+                "params": {
+                    "textDocument": {
+                        "uri": uri,
+                        "languageId": "spice",
+                        "version": 1,
+                        "text": source
+                    }
+                }
+            }))
+            .await;
+
+        let notification = server
+            .read_notification("textDocument/publishDiagnostics")
+            .await;
+        assert_eq!(notification["params"]["uri"], uri);
+        assert!(
+            notification["params"]["diagnostics"]
+                .as_array()
+                .unwrap()
+                .is_empty(),
+            "expected no diagnostics for {uri}"
+        );
+        server.shutdown().await;
+    }
+}
+
+#[tokio::test]
 async fn did_change_updates_diagnostics() {
     let uri = "file:///test/live.cir";
     let invalid = fixture("invalid/unclosed-subckt.cir");

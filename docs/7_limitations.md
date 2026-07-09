@@ -11,6 +11,7 @@ Shipped today:
 - Document outline, go to definition, and find references
 - Debounced diagnostics on edit; `textDocument/references` honors `includeDeclaration`
 - Marketplace extension with bundled binaries, TextMate highlighting, and restart command
+- File associations for `.cir`, `.sp`, `.spf`, `.net`, and `.ckt`
 
 ## Current limitations
 

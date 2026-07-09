@@ -59,7 +59,7 @@ Example language contribution:
   "languages": [{
     "id": "spice",
     "aliases": ["SPICE", "spice"],
-    "extensions": [".cir", ".sp", ".net", ".ckt"],
+    "extensions": [".cir", ".sp", ".spf", ".net", ".ckt"],
     "configuration": "./language-configuration.json"
   }]
 }
@@ -107,7 +107,7 @@ async function startClient(serverPath: string) {
   const clientOptions: LanguageClientOptions = {
     documentSelector: [{ scheme: "file", language: "spice" }],
     synchronize: {
-      fileEvents: vscode.workspace.createFileSystemWatcher("**/*.{cir,sp,net,ckt}"),
+      fileEvents: vscode.workspace.createFileSystemWatcher("**/*.{cir,sp,spf,net,ckt}"),
     },
   };
   client = new LanguageClient("spiceLsp", "SPICE Language Server", serverOptions, clientOptions);

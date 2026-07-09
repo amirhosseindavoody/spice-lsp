@@ -85,7 +85,7 @@ Any editor with generic LSP client support can point at the `spice-lsp` binary:
 | Helix | `[language-server.spice-lsp]` in `languages.toml` |
 | Zed | Extension or `lsp` settings (once published) |
 
-File extensions to associate: `.cir`, `.sp`, `.net`, `.ckt` (dialect-dependent).
+File extensions to associate: `.cir`, `.sp`, `.spf`, `.net`, `.ckt` (dialect-dependent).
 
 ## Recommended first contribution path
 
