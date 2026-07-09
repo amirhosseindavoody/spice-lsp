@@ -6,7 +6,7 @@ Language server and formatter for [SPICE](https://en.wikipedia.org/wiki/SPICE) c
 
 ## VS Code extension
 
-Install from the Marketplace (search **SPICE Language Support**) once published, or side-load a `.vsix`:
+Install from the [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=AmirhosseinDavoody.spice-lsp) (**SPICE Language Support**), or side-load a `.vsix`:
 
 ```bash
 pixi run build
