@@ -12,6 +12,8 @@ pixi run <task>       # run a defined task
 pixi run cargo build  # ad-hoc command in the env
 ```
 
+The workspace supports `linux-64`, `osx-arm64`, `osx-64`, and `win-64` so release CI can install the same environment on every runner.
+
 Add dependencies with the CLI (do not hand-edit versions):
 
 ```bash
