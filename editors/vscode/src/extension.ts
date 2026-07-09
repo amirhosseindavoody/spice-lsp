@@ -104,27 +104,50 @@ function parseTraceLevel(value: string | undefined): Trace {
   }
 }
 
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
 async function startClient(): Promise<void> {
   client = createClient();
   await client.start();
 }
 
+async function stopClient(): Promise<void> {
+  if (!client) {
+    return;
+  }
+
+  const current = client;
+  client = undefined;
+  await current.stop();
+}
+
+async function restartClient(): Promise<void> {
+  await stopClient();
+  await startClient();
+}
+
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   extensionPath = context.extensionPath;
-  await startClient();
 
+  // Register commands and subscriptions before starting the server so a failed
+  // start cannot leave contributed commands unregistered ("not found").
   context.subscriptions.push({
     dispose: () => {
-      void client?.stop();
+      void stopClient();
     },
   });
 
   context.subscriptions.push(
     vscode.commands.registerCommand("spiceLsp.restartServer", async () => {
-      if (client) {
-        await client.stop();
+      try {
+        await restartClient();
+      } catch (error) {
+        void vscode.window.showErrorMessage(
+          `Failed to restart SPICE LSP: ${errorMessage(error)}`,
+        );
       }
-      await startClient();
     }),
   );
 
@@ -134,17 +157,26 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         event.affectsConfiguration("spiceLsp.serverPath") ||
         event.affectsConfiguration("spiceLsp.trace.server")
       ) {
-        if (client) {
-          await client.stop();
+        try {
+          await restartClient();
+        } catch (error) {
+          void vscode.window.showErrorMessage(
+            `Failed to restart SPICE LSP: ${errorMessage(error)}`,
+          );
         }
-        await startClient();
       }
     }),
   );
+
+  try {
+    await startClient();
+  } catch (error) {
+    void vscode.window.showErrorMessage(
+      `Failed to start SPICE LSP: ${errorMessage(error)}. Use "SPICE LSP: Restart Server" after fixing the server path.`,
+    );
+  }
 }
 
 export async function deactivate(): Promise<void> {
-  if (client) {
-    await client.stop();
-  }
+  await stopClient();
 }

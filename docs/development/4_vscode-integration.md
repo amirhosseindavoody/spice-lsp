@@ -50,7 +50,7 @@ Key fields:
 | `main` | `./out/extension.js` (compiled output) |
 | `contributes.languages` | Register `spice` language id and file extensions |
 | `contributes.configuration` | `spiceLsp.serverPath`, `spiceLsp.trace.server` |
-| `contributes.commands` | `spiceLsp.restartServer` (recommended) |
+| `contributes.commands` | `spiceLsp.restartServer` — must register in `activate` before `client.start()` |
 
 Example language contribution:
 
@@ -85,10 +85,9 @@ Note: SPICE also uses `;` and `$` comments — full support may require a TextMa
 
 ## extension.ts
 
-Minimal Language Client setup:
+Minimal Language Client setup. Register `spiceLsp.restartServer` **before** starting the client, and catch startup failures so a missing/broken binary cannot leave the command unregistered (`command 'spiceLsp.restartServer' not found`):
 
 ```typescript
-import * as path from "path";
 import * as vscode from "vscode";
 import {
   LanguageClient,
@@ -99,32 +98,39 @@ import {
 
 let client: LanguageClient | undefined;
 
-export async function activate(context: vscode.ExtensionContext) {
-  const config = vscode.workspace.getConfiguration("spiceLsp");
-  const serverPath = config.get<string>("serverPath") || "spice-lsp";
-
+async function startClient(serverPath: string) {
   const serverOptions: ServerOptions = {
     command: serverPath,
     args: [],
     transport: TransportKind.stdio,
   };
-
   const clientOptions: LanguageClientOptions = {
     documentSelector: [{ scheme: "file", language: "spice" }],
     synchronize: {
       fileEvents: vscode.workspace.createFileSystemWatcher("**/*.{cir,sp,net,ckt}"),
     },
   };
-
   client = new LanguageClient("spiceLsp", "SPICE Language Server", serverOptions, clientOptions);
-  context.subscriptions.push(client.start());
+  await client.start();
+}
+
+export async function activate(context: vscode.ExtensionContext) {
+  const config = vscode.workspace.getConfiguration("spiceLsp");
+  const serverPath = config.get<string>("serverPath") || "spice-lsp";
 
   context.subscriptions.push(
     vscode.commands.registerCommand("spiceLsp.restartServer", async () => {
       await client?.stop();
-      await client?.start();
-    })
+      await startClient(serverPath);
+    }),
   );
+
+  try {
+    await startClient(serverPath);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    void vscode.window.showErrorMessage(`Failed to start SPICE LSP: ${message}`);
+  }
 }
 
 export async function deactivate() {
@@ -334,7 +340,8 @@ Pre-publish checklist:
 
 | Symptom | Likely cause | Fix |
 |---------|--------------|-----|
-| Server not starting | Binary not on PATH | Set `spiceLsp.serverPath` |
+| Server not starting | Binary not on PATH / wrong `serverPath` | Set `spiceLsp.serverPath`, then **SPICE LSP: Restart Server** |
+| `spiceLsp.restartServer` not found | Extension activate failed before registering the command | Update to a build that registers commands before `client.start()`; reload the window |
 | No diagnostics | Wrong language id | Ensure file extension maps to `spice` |
 | Stale diagnostics | Server crash | Check Output → SPICE LSP; restart server |
 | Wrong binary arch | Download mismatch | Pick correct release asset |
