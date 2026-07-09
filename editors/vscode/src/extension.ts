@@ -12,6 +12,15 @@ import {
 let client: LanguageClient | undefined;
 let extensionPath = "";
 
+/** Platforms that ship a bundled binary in the Marketplace VSIX. */
+const BUNDLED_PLATFORMS = new Set([
+  "linux-x64",
+  "linux-arm64",
+  "darwin-x64",
+  "darwin-arm64",
+  "win32-x64",
+]);
+
 export function getPlatformId(): string {
   return `${process.platform}-${process.arch}`;
 }
@@ -63,9 +72,44 @@ function resolveServerPath(config: vscode.WorkspaceConfiguration): string {
   return "spice-lsp";
 }
 
+function missingBinaryHint(serverPath: string): string | undefined {
+  const configured = vscode.workspace
+    .getConfiguration("spiceLsp")
+    .get<string>("serverPath")
+    ?.trim();
+  if (configured) {
+    if (!fs.existsSync(configured)) {
+      return `Configured spiceLsp.serverPath does not exist: ${configured}`;
+    }
+    return undefined;
+  }
+
+  if (serverPath !== "spice-lsp") {
+    return undefined;
+  }
+
+  const platformId = getPlatformId();
+  if (!BUNDLED_PLATFORMS.has(platformId)) {
+    return (
+      `No bundled spice-lsp binary for platform ${platformId}. ` +
+      `Supported: ${[...BUNDLED_PLATFORMS].join(", ")}. ` +
+      `Install spice-lsp on PATH or set spiceLsp.serverPath.`
+    );
+  }
+
+  return (
+    `Bundled spice-lsp binary was not found for ${platformId}. ` +
+    `Reinstall the extension, or set spiceLsp.serverPath to a local binary.`
+  );
+}
+
 function createClient(): LanguageClient {
   const config = vscode.workspace.getConfiguration("spiceLsp");
   const serverPath = resolveServerPath(config);
+  const hint = missingBinaryHint(serverPath);
+  if (hint) {
+    throw new Error(hint);
+  }
 
   const serverOptions: ServerOptions = {
     command: serverPath,
