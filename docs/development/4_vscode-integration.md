@@ -229,7 +229,7 @@ The [Release VS Code extension](../../.github/workflows/release-vscode.yml) work
 3. Assembles a single `.vsix` containing every platform binary
 4. Uploads the VSIX as a GitHub Actions artifact
 5. Creates a GitHub Release tagged `vscode-v<version>`
-6. Publishes to the VS Code Marketplace (`VSCE_PAT` required)
+6. Publishes to the VS Code Marketplace from the same package job (`VSCE_PAT` required)
 
 | Strategy | Pros | Cons |
 |----------|------|------|

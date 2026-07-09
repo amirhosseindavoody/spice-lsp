@@ -238,19 +238,10 @@ jobs:
           files: editors/vscode/*.vsix
           generate_release_notes: true
 
-  publish:
-    name: Publish to Marketplace
-    needs: [prepare, package]
-    if: needs.prepare.outputs.should_publish == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Download VSIX
-        uses: actions/download-artifact@v4
-        with:
-          name: spice-lsp-vscode-vsix
-          path: vsix
-
-      - name: Publish extension
+      # Publish in the same job as packaging so we do not wait on a second
+      # ubuntu-latest runner (separate publish jobs were stuck queued).
+      - name: Publish to Marketplace
+        if: needs.prepare.outputs.should_publish == 'true'
         env:
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
         run: |
@@ -259,4 +250,4 @@ jobs:
             exit 1
           fi
           npm install -g @vscode/vsce
-          vsce publish --no-dependencies --packagePath "$(ls vsix/*.vsix | head -1)"
+          vsce publish --no-dependencies --packagePath "$(ls editors/vscode/*.vsix | head -1)"
