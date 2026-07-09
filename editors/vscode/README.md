@@ -14,6 +14,8 @@ That is enough for day-to-day editing. The matching `spice-lsp` binary for your 
 
 If nothing happens after opening a file, check **Output → SPICE Language Server**, then run **SPICE LSP: Restart Server** from the Command Palette. That Output channel is created as soon as the extension activates.
 
+To switch dialect, use **SPICE LSP: Set Dialect…** (or the status-bar dialect chip). Requires extension **0.2.10+**. If VS Code says the command is not registered, update/reload the extension.
+
 ## Features
 
 - **Syntax highlighting** — comments (`*` / `;` / `$`), directives, instances, and numbers
