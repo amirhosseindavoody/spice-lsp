@@ -2,7 +2,7 @@
 
 Language server and formatter for [SPICE](https://en.wikipedia.org/wiki/SPICE) circuit simulation netlists.
 
-**Current status:** v0.2 — syntax + semantic diagnostics, document outline, go to definition, find references; VS Code extension with bundled binaries; Marketplace publish on each push to `main`.
+**Current status:** v0.3 — multi-dialect support (default HSPICE), curated reference hover, syntax + semantic diagnostics, outline, go to definition, find references; VS Code extension with bundled binaries; Marketplace publish on each push to `main`.
 
 ## VS Code extension
 
@@ -64,14 +64,15 @@ First-time setup (repository admin, after the first deploy):
 ./scripts/setup-github-pages.sh
 ```
 
-## What v0.2 delivers
+## What v0.3 delivers
 
 | Shipped | Still deferred |
 |---------|----------------|
-| Stdio LSP server (`initialize`, text sync, `publishDiagnostics`) | Dialect reference hover (curated `reference/` corpus) |
-| Tree-sitter parse (Ngspice-oriented) | Floating-net / dangling-node analysis |
-| Syntax + semantic diagnostics | Formatter and completion |
-| Document outline, go to definition, find references | Multi-dialect reference libraries |
+| Stdio LSP server (`initialize`, text sync, `publishDiagnostics`) | Floating-net / dangling-node analysis |
+| Tree-sitter parse (shared grammar; dialect profile) | Formatter and completion |
+| Syntax + semantic diagnostics | Deep LTspice / HSPICE grammar splits |
+| Document outline, go to definition, find references | Multi-dialect reference libraries beyond starter set |
+| Dialect setting (default HSPICE) + curated hover corpus | Per-file dialect overrides |
 | VS Code extension (Marketplace, bundled binaries, highlighting) | Windows arm64 bundled binary |
 
 **Build order (historical MVP):** Cargo workspace → minimal grammar → LSP skeleton → sample netlist fixtures → VS Code extension → integration test that speaks JSON-RPC.

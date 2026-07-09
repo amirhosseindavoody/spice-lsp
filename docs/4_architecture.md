@@ -51,7 +51,7 @@ Layer 4 is documented in detail in [Dialect reference and net semantics](8_diale
 |-------------------|------|---------------|
 | `crates/spice-lsp` | LSP server, JSON-RPC, document store | MVP |
 | `crates/spice-parser` | Parsing, symbol index, diagnostics, format | MVP (parse only) |
-| `crates/spice-reference` | Load and query dialect reference entries | v0.5 |
+| `crates/spice-reference` | Load and query dialect reference entries | v0.3 |
 | `tree-sitter-spice/` | Grammar and query files | MVP |
 | `reference/` | Curated JSON (or YAML) per dialect — **authored over time** | v0.5 |
 | `editors/vscode/` | VS Code extension client | MVP |

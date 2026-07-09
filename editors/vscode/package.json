@@ -22,6 +22,8 @@
   "keywords": [
     "spice",
     "ngspice",
+    "hspice",
+    "ltspice",
     "circuit",
     "netlist",
     "lsp",
@@ -30,7 +32,8 @@
   "icon": "media/icon.png",
   "activationEvents": [
     "onLanguage:spice",
-    "onCommand:spiceLsp.restartServer"
+    "onCommand:spiceLsp.restartServer",
+    "onCommand:spiceLsp.setDialect"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -75,6 +78,16 @@
           ],
           "default": "off",
           "description": "Traces communication between VS Code and the language server."
+        },
+        "spiceLsp.dialect": {
+          "type": "string",
+          "enum": [
+            "hspice",
+            "ngspice",
+            "ltspice"
+          ],
+          "default": "hspice",
+          "description": "Active SPICE dialect. Selects reference documentation for hover and future dialect-specific diagnostics. Default is HSPICE."
         }
       }
     },
@@ -82,6 +95,10 @@
       {
         "command": "spiceLsp.restartServer",
         "title": "SPICE LSP: Restart Server"
+      },
+      {
+        "command": "spiceLsp.setDialect",
+        "title": "SPICE LSP: Set Dialect…"
       }
     ]
   },

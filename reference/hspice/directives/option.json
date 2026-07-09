@@ -1,0 +1,12 @@
+{
+  "id": "hspice.directive.option",
+  "kind": "directive",
+  "name": ".option",
+  "summary": "Set HSPICE simulation options",
+  "syntax": ".OPTION keyword=value [keyword=value ...]",
+  "parameters": [
+    { "name": "keyword", "description": "Option name (e.g. POST, RUNLVL)." }
+  ],
+  "examples": [".OPTION POST=2", ".OPTION RUNLVL=5"],
+  "dialectNotes": "Option keywords differ across simulators; this entry covers the `.option` form."
+}

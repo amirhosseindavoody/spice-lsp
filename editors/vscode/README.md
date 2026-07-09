@@ -22,6 +22,7 @@ If nothing happens after opening a file, check **Output → SPICE Language Serve
 - **Document outline** — hierarchical view of subcircuits, models, parameters, and instances
 - **Go to definition** — jump from subcircuit references to `.subckt` definitions
 - **Find references** — list all usages of a subcircuit, model, or parameter
+- **Dialect-aware hover** — documentation for directives and elements from the active dialect (default **HSPICE**)
 
 Supported file extensions: `.cir`, `.sp`, `.spf`, `.net`, `.ckt`. Toggle Comment uses `*` (VS Code allows one line-comment marker); `;` and `$` still highlight as comments.
 
@@ -41,8 +42,11 @@ Other platforms (or older Linux glibc) need a `spice-lsp` binary on your `PATH`,
 
 | Setting | Description |
 |---------|-------------|
+| `spiceLsp.dialect` | Active dialect: `hspice` (default), `ngspice`, or `ltspice` |
 | `spiceLsp.serverPath` | Override the bundled language-server binary with a custom path |
 | `spiceLsp.trace.server` | Trace LSP communication: `off`, `messages`, or `verbose` |
+
+Use **SPICE LSP: Set Dialect…** (or the status-bar dialect chip) to switch. Hover tips come from the curated `reference/` corpus for the active dialect.
 
 ## Documentation
 

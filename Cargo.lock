@@ -601,8 +601,10 @@ dependencies = [
 name = "spice-lsp"
 version = "0.1.0"
 dependencies = [
+ "serde",
  "serde_json",
  "spice-parser",
+ "spice-reference",
  "tokio",
  "tower-lsp",
  "url",
@@ -615,6 +617,15 @@ dependencies = [
  "tree-sitter",
  "tree-sitter-spice",
  "walkdir",
+]
+
+[[package]]
+name = "spice-reference"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "spice-parser",
 ]
 
 [[package]]

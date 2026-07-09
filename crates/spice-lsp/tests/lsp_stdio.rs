@@ -113,12 +113,21 @@ fn fixture(name: &str) -> String {
 }
 
 async fn handshake(server: &mut LspProcess) {
+    handshake_with_dialect(server, "ngspice").await;
+}
+
+async fn handshake_with_dialect(server: &mut LspProcess, dialect: &str) {
     server
         .send(json!({
             "jsonrpc": "2.0",
             "id": 1,
             "method": "initialize",
-            "params": { "processId": null, "rootUri": null, "capabilities": {} }
+            "params": {
+                "processId": null,
+                "rootUri": null,
+                "capabilities": {},
+                "initializationOptions": { "dialect": dialect }
+            }
         }))
         .await;
     let _ = server.read_response(1).await;
@@ -159,6 +168,105 @@ async fn initialize_advertises_navigation_capabilities() {
     assert_eq!(caps["documentSymbolProvider"], true);
     assert_eq!(caps["definitionProvider"], true);
     assert_eq!(caps["referencesProvider"], true);
+    assert_eq!(caps["hoverProvider"], true);
+    server.shutdown().await;
+}
+
+#[tokio::test]
+async fn hover_on_tran_uses_dialect_corpus() {
+    let uri = "file:///test/tran.cir";
+    let source = "* demo\n.tran 1n 100n\n.end\n";
+    let offset = source.find("tran").expect("tran");
+
+    let mut server = LspProcess::spawn().await;
+    handshake_with_dialect(&mut server, "hspice").await;
+    server
+        .send(json!({
+            "jsonrpc": "2.0",
+            "method": "textDocument/didOpen",
+            "params": {
+                "textDocument": {
+                    "uri": uri,
+                    "languageId": "spice",
+                    "version": 1,
+                    "text": source
+                }
+            }
+        }))
+        .await;
+    let _ = server
+        .read_notification("textDocument/publishDiagnostics")
+        .await;
+
+    let (line, character) = byte_offset_to_line_col(&source, offset);
+    server
+        .send(json!({
+            "jsonrpc": "2.0",
+            "id": 10,
+            "method": "textDocument/hover",
+            "params": {
+                "textDocument": { "uri": uri },
+                "position": { "line": line, "character": character }
+            }
+        }))
+        .await;
+    let response = server.read_response(10).await;
+    let value = response["result"]["contents"]["value"]
+        .as_str()
+        .expect("hover markdown");
+    assert!(
+        value.contains("HSPICE") && value.contains(".tran"),
+        "unexpected hover: {value}"
+    );
+    server.shutdown().await;
+}
+
+#[tokio::test]
+async fn hover_on_tran_ngspice_corpus() {
+    let uri = "file:///test/tran-ng.cir";
+    let source = "* demo\n.tran 1n 100n\n.end\n";
+    let offset = source.find("tran").expect("tran");
+
+    let mut server = LspProcess::spawn().await;
+    handshake_with_dialect(&mut server, "ngspice").await;
+    server
+        .send(json!({
+            "jsonrpc": "2.0",
+            "method": "textDocument/didOpen",
+            "params": {
+                "textDocument": {
+                    "uri": uri,
+                    "languageId": "spice",
+                    "version": 1,
+                    "text": source
+                }
+            }
+        }))
+        .await;
+    let _ = server
+        .read_notification("textDocument/publishDiagnostics")
+        .await;
+
+    let (line, character) = byte_offset_to_line_col(&source, offset);
+    server
+        .send(json!({
+            "jsonrpc": "2.0",
+            "id": 11,
+            "method": "textDocument/hover",
+            "params": {
+                "textDocument": { "uri": uri },
+                "position": { "line": line, "character": character }
+            }
+        }))
+        .await;
+    let response = server.read_response(11).await;
+    let value = response["result"]["contents"]["value"]
+        .as_str()
+        .expect("hover markdown");
+    assert!(
+        value.contains("Ngspice") && value.contains(".tran"),
+        "unexpected hover: {value}"
+    );
     server.shutdown().await;
 }
 

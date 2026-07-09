@@ -1,0 +1,12 @@
+{
+  "id": "shared.directive.param",
+  "kind": "directive",
+  "name": ".param",
+  "summary": "Define a named parameter",
+  "syntax": ".param name=value [name2=value2 ...]",
+  "parameters": [
+    { "name": "name", "description": "Parameter identifier." },
+    { "name": "value", "description": "Numeric value or expression." }
+  ],
+  "examples": [".param rload=1k", ".param pi=3.14159"]
+}

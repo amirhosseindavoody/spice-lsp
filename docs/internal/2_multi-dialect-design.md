@@ -2,7 +2,7 @@
 
 Design for [issue #16](https://github.com/amirhosseindavoody/spice-lsp/issues/16): selectable SPICE dialects (default **HSPICE**), retained **Ngspice** support, a maintainable system for growing syntax/reference knowledge, and reuse of that data for hover (and later completion).
 
-**Status:** design only — no implementation in this change.  
+**Status:** Phase A (dialect switch) and Phase B (reference corpus + hover) implemented.  
 **Related:** [Dialect reference and net semantics](../8_dialect-reference-and-semantics.md), [LSP features](../5_lsp-features.md), [Architecture](../4_architecture.md).
 
 ---
@@ -366,14 +366,16 @@ Issue #16 is satisfied by **Phase A + a clear path through B**; B can ship in th
 
 ## 13. Implementation checklist (when coding starts)
 
-- [ ] `spiceLsp.dialect` + `spiceLsp.setDialect` + status bar
-- [ ] Server session dialect + config update path
-- [ ] `DialectProfile` + Ngspice parity tests under `ngspice`
-- [ ] Update [LSP features](../5_lsp-features.md), [limitations](../7_limitations.md), Marketplace README for default HSPICE
-- [ ] Scaffold `reference/schema.json`, `_shared/`, `hspice/`, `ngspice/`
-- [ ] `spice-reference` + validate/codegen tasks
-- [ ] Hover provider + snapshots
-- [ ] Close #16 when Phase A is shipped and Phase B is scheduled/linked
+- [x] `spiceLsp.dialect` + `spiceLsp.setDialect` + status bar
+- [x] Server session dialect + config update path
+- [x] `DialectProfile` + Ngspice parity tests under `ngspice`
+- [x] Update [LSP features](../5_lsp-features.md), [limitations](../7_limitations.md), Marketplace README for default HSPICE
+- [x] Scaffold `reference/schema.json`, `_shared/`, `hspice/`, `ngspice/`
+- [x] `spice-reference` + validate/codegen tasks
+- [x] Hover provider + snapshots
+- [x] Close #16 when Phase A is shipped and Phase B is scheduled/linked
+- [ ] Phase C: dialect-sensitive diagnostics / grammar splits
+- [ ] Phase D: optional catalog docs from JSON
 
 ---
 

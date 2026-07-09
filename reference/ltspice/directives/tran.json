@@ -1,0 +1,13 @@
+{
+  "id": "ltspice.directive.tran",
+  "kind": "directive",
+  "name": ".tran",
+  "summary": "Transient analysis (LTspice)",
+  "syntax": ".tran <Tstep> <Tstop> [Tstart [dTmax]] [modifiers]",
+  "parameters": [
+    { "name": "Tstep", "description": "Printing increment.", "units": "s" },
+    { "name": "Tstop", "description": "Stop time.", "units": "s" }
+  ],
+  "examples": [".tran 1n 100n"],
+  "dialectNotes": "LTspice support is a stub corpus in v0.3; grammar remains shared."
+}

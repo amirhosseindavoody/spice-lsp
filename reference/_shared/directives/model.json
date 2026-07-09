@@ -1,0 +1,12 @@
+{
+  "id": "shared.directive.model",
+  "kind": "directive",
+  "name": ".model",
+  "summary": "Define a device model",
+  "syntax": ".model mname type (param=value ...)",
+  "parameters": [
+    { "name": "mname", "description": "Model name referenced by instances." },
+    { "name": "type", "description": "Model type (e.g. NMOS, PMOS, D, NPN)." }
+  ],
+  "examples": [".model nmos NMOS (VTO=0.7)"]
+}

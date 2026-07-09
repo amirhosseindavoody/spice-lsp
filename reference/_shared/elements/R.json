@@ -1,0 +1,13 @@
+{
+  "id": "shared.element.R",
+  "kind": "element",
+  "name": "R",
+  "summary": "Resistor",
+  "syntax": "Rname n1 n2 value [params...]",
+  "parameters": [
+    { "name": "n1", "description": "Positive node." },
+    { "name": "n2", "description": "Negative node." },
+    { "name": "value", "description": "Resistance.", "units": "ohm" }
+  ],
+  "examples": ["R1 in out 1k", "Rload out 0 50"]
+}

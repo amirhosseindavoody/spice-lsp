@@ -1,0 +1,12 @@
+{
+  "id": "shared.directive.ends",
+  "kind": "directive",
+  "name": ".ends",
+  "summary": "End a subcircuit definition",
+  "syntax": ".ends [name]",
+  "parameters": [
+    { "name": "name", "description": "Optional subcircuit name; should match `.subckt`." }
+  ],
+  "examples": [".ends", ".ends buffer"],
+  "seeAlso": ["shared.directive.subckt"]
+}

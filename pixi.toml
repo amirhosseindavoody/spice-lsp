@@ -18,6 +18,7 @@ grammar-generate = { cwd = "tree-sitter-spice", cmd = "npx --yes tree-sitter-cli
 ext-install = { cwd = "editors/vscode", cmd = "npm install" }
 ext-compile = { cwd = "editors/vscode", cmd = "npm run compile" }
 ext-package = "./scripts/package-vscode-extension.sh"
+reference-validate = "cargo test -p spice-reference --lib"
 
 [dependencies]
 rust = ">=1.96.1,<1.97"

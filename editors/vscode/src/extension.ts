@@ -12,6 +12,15 @@ import {
 let client: LanguageClient | undefined;
 let extensionPath = "";
 let output: vscode.OutputChannel | undefined;
+let dialectStatus: vscode.StatusBarItem | undefined;
+
+const DIALECTS = [
+  { id: "hspice", label: "HSPICE" },
+  { id: "ngspice", label: "Ngspice" },
+  { id: "ltspice", label: "LTspice" },
+] as const;
+
+type DialectId = (typeof DIALECTS)[number]["id"];
 
 /** Platforms that ship a bundled binary in the Marketplace VSIX. */
 const BUNDLED_PLATFORMS = new Set([
@@ -110,6 +119,31 @@ function missingBinaryHint(serverPath: string): string | undefined {
   );
 }
 
+function currentDialectId(): DialectId {
+  const raw = vscode.workspace
+    .getConfiguration("spiceLsp")
+    .get<string>("dialect")
+    ?.trim()
+    .toLowerCase();
+  if (raw === "ngspice" || raw === "ltspice" || raw === "hspice") {
+    return raw;
+  }
+  return "hspice";
+}
+
+function dialectLabel(id: DialectId): string {
+  return DIALECTS.find((d) => d.id === id)?.label ?? id;
+}
+
+function updateDialectStatus(): void {
+  if (!dialectStatus) {
+    return;
+  }
+  const id = currentDialectId();
+  dialectStatus.text = `$(chip) ${dialectLabel(id)}`;
+  dialectStatus.tooltip = `SPICE dialect: ${dialectLabel(id)} (click to change)`;
+}
+
 function createClient(): LanguageClient {
   const config = vscode.workspace.getConfiguration("spiceLsp");
   const serverPath = resolveServerPath(config);
@@ -118,7 +152,8 @@ function createClient(): LanguageClient {
     throw new Error(hint);
   }
 
-  log(`Starting language server: ${serverPath}`);
+  const dialect = currentDialectId();
+  log(`Starting language server: ${serverPath} (dialect=${dialect})`);
 
   const serverOptions: ServerOptions = {
     command: serverPath,
@@ -129,9 +164,13 @@ function createClient(): LanguageClient {
   const clientOptions: LanguageClientOptions = {
     documentSelector: [{ scheme: "file", language: "spice" }],
     synchronize: {
+      configurationSection: "spiceLsp",
       fileEvents: vscode.workspace.createFileSystemWatcher(
         "**/*.{cir,sp,spf,net,ckt}",
       ),
+    },
+    initializationOptions: {
+      dialect,
     },
     outputChannel: output,
   };
@@ -192,14 +231,57 @@ async function restartClient(): Promise<void> {
   await startClient();
 }
 
+async function setDialect(): Promise<void> {
+  const picked = await vscode.window.showQuickPick(
+    DIALECTS.map((d) => ({
+      label: d.label,
+      description: d.id,
+      id: d.id,
+    })),
+    {
+      title: "SPICE LSP: Set Dialect",
+      placeHolder: "Select the active SPICE dialect",
+    },
+  );
+  if (!picked) {
+    return;
+  }
+
+  const target = vscode.workspace.workspaceFolders?.length
+    ? vscode.ConfigurationTarget.Workspace
+    : vscode.ConfigurationTarget.Global;
+  await vscode.workspace
+    .getConfiguration("spiceLsp")
+    .update("dialect", picked.id, target);
+  updateDialectStatus();
+  log(`Dialect set to ${picked.id}`);
+  try {
+    await restartClient();
+    void vscode.window.showInformationMessage(
+      `SPICE dialect: ${picked.label}`,
+    );
+  } catch (error) {
+    void vscode.window.showErrorMessage(
+      `Failed to restart SPICE LSP after dialect change: ${errorMessage(error)}`,
+    );
+  }
+}
+
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   extensionPath = context.extensionPath;
   output = vscode.window.createOutputChannel("SPICE Language Server");
   context.subscriptions.push(output);
   log(`Activating extension from ${extensionPath} (${getPlatformId()})`);
 
-  // Register commands before starting the server so a failed start cannot leave
-  // contributed commands unregistered ("not found").
+  dialectStatus = vscode.window.createStatusBarItem(
+    vscode.StatusBarAlignment.Right,
+    100,
+  );
+  dialectStatus.command = "spiceLsp.setDialect";
+  updateDialectStatus();
+  dialectStatus.show();
+  context.subscriptions.push(dialectStatus);
+
   context.subscriptions.push({
     dispose: () => {
       void stopClient();
@@ -223,10 +305,20 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   );
 
   context.subscriptions.push(
+    vscode.commands.registerCommand("spiceLsp.setDialect", async () => {
+      await setDialect();
+    }),
+  );
+
+  context.subscriptions.push(
     vscode.workspace.onDidChangeConfiguration(async (event) => {
+      if (event.affectsConfiguration("spiceLsp.dialect")) {
+        updateDialectStatus();
+      }
       if (
         event.affectsConfiguration("spiceLsp.serverPath") ||
-        event.affectsConfiguration("spiceLsp.trace.server")
+        event.affectsConfiguration("spiceLsp.trace.server") ||
+        event.affectsConfiguration("spiceLsp.dialect")
       ) {
         try {
           await restartClient();

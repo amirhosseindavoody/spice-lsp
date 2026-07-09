@@ -1,0 +1,16 @@
+{
+  "id": "hspice.directive.tran",
+  "kind": "directive",
+  "name": ".tran",
+  "summary": "Transient analysis (HSPICE)",
+  "syntax": ".TRAN tstep tstop [tstart [tmax]] [UIC]",
+  "parameters": [
+    { "name": "tstep", "description": "Printing increment.", "units": "s" },
+    { "name": "tstop", "description": "Stop time.", "units": "s" },
+    { "name": "tstart", "description": "Optional start of printing.", "units": "s" },
+    { "name": "tmax", "description": "Optional maximum timestep.", "units": "s" },
+    { "name": "UIC", "description": "Use initial conditions." }
+  ],
+  "examples": [".TRAN 1p 10n"],
+  "dialectNotes": "HSPICE commonly uses uppercase directives; spice-lsp matches case-insensitively."
+}
