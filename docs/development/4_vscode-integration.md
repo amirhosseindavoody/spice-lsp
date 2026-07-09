@@ -50,7 +50,7 @@ Key fields:
 | `main` | `./out/extension.js` (compiled output) |
 | `contributes.languages` | Register `spice` language id and file extensions |
 | `contributes.configuration` | `spiceLsp.serverPath`, `spiceLsp.trace.server` |
-| `contributes.commands` | `spiceLsp.restartServer` (recommended) |
+| `contributes.commands` | `spiceLsp.restartServer` — must register in `activate` before `client.start()` |
 
 Example language contribution:
 
@@ -85,10 +85,9 @@ Note: SPICE also uses `;` and `$` comments — full support may require a TextMa
 
 ## extension.ts
 
-Minimal Language Client setup:
+Minimal Language Client setup. Register `spiceLsp.restartServer` **before** starting the client, and catch startup failures so a missing/broken binary cannot leave the command unregistered (`command 'spiceLsp.restartServer' not found`):
 
 ```typescript
-import * as path from "path";
 import * as vscode from "vscode";
 import {
   LanguageClient,
@@ -99,32 +98,39 @@ import {
 
 let client: LanguageClient | undefined;
 
-export async function activate(context: vscode.ExtensionContext) {
-  const config = vscode.workspace.getConfiguration("spiceLsp");
-  const serverPath = config.get<string>("serverPath") || "spice-lsp";
-
+async function startClient(serverPath: string) {
   const serverOptions: ServerOptions = {
     command: serverPath,
     args: [],
     transport: TransportKind.stdio,
   };
-
   const clientOptions: LanguageClientOptions = {
     documentSelector: [{ scheme: "file", language: "spice" }],
     synchronize: {
       fileEvents: vscode.workspace.createFileSystemWatcher("**/*.{cir,sp,net,ckt}"),
     },
   };
-
   client = new LanguageClient("spiceLsp", "SPICE Language Server", serverOptions, clientOptions);
-  context.subscriptions.push(client.start());
+  await client.start();
+}
+
+export async function activate(context: vscode.ExtensionContext) {
+  const config = vscode.workspace.getConfiguration("spiceLsp");
+  const serverPath = config.get<string>("serverPath") || "spice-lsp";
 
   context.subscriptions.push(
     vscode.commands.registerCommand("spiceLsp.restartServer", async () => {
       await client?.stop();
-      await client?.start();
-    })
+      await startClient(serverPath);
+    }),
   );
+
+  try {
+    await startClient(serverPath);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    void vscode.window.showErrorMessage(`Failed to start SPICE LSP: ${message}`);
+  }
 }
 
 export async function deactivate() {
@@ -196,6 +202,8 @@ The Marketplace extension ships a **platform-specific binary** inside the `.vsix
 | `darwin-x64` | macOS Intel |
 | `darwin-arm64` | macOS Apple Silicon |
 | `win32-x64` | Windows x64 |
+
+There is **no** `win32-arm64` bundle today. Unsupported platforms must set `spiceLsp.serverPath` or put `spice-lsp` on `PATH`.
 
 At activation, the extension resolves the binary in this order:
 
@@ -283,7 +291,7 @@ Do this once before the first CI publish succeeds:
    - Name: `VSCE_PAT`
    - Value: the Azure DevOps PAT from step 3
 5. Confirm Marketplace listing metadata is ready in `editors/vscode/`:
-   - `README.md` (Marketplace landing page)
+   - `README.md` (Marketplace landing page — include a **Quick start** so users know what to do after install)
    - `LICENSE` (`MIT` matches `package.json`)
    - `publisher`, `displayName`, `description`, `engines.vscode`
 
@@ -292,9 +300,11 @@ Optional local dry-run before relying on CI:
 ```bash
 pixi run build
 pixi run ext-package
-cd editors/vscode
-npx vsce package --no-dependencies   # validates packaging without publishing
+# output: editors/vscode/spice-lsp-<version>.vsix
+# packaging fails if vscode-languageclient is missing from the VSIX
 ```
+
+Do **not** pass `--no-dependencies` to `vsce package` / `vsce publish`. The extension is compiled with `tsc` (not webpack-bundled), so runtime npm deps such as `vscode-languageclient` must be packed into the VSIX.
 
 ### Release from CI (automatic)
 
@@ -319,7 +329,7 @@ pixi run ext-package
 cd editors/vscode
 # bump version first if this version was already published
 npm version patch --no-git-tag-version
-npx vsce publish --no-dependencies   # requires VSCE_PAT in the environment
+npx vsce publish --packagePath "$(ls -t *.vsix | head -1)"   # requires VSCE_PAT
 ```
 
 Pre-publish checklist:
@@ -334,10 +344,12 @@ Pre-publish checklist:
 
 | Symptom | Likely cause | Fix |
 |---------|--------------|-----|
-| Server not starting | Binary not on PATH | Set `spiceLsp.serverPath` |
+| Server not starting | Binary not on PATH / wrong `serverPath` / unsupported platform | Set `spiceLsp.serverPath`, then **SPICE LSP: Restart Server**; check Output → SPICE Language Server |
+| `spiceLsp.restartServer` not found | Extension activate failed before registering the command | Update to a build that registers commands before `client.start()`; reload the window |
+| Extension activates with module errors | VSIX packed with `--no-dependencies` (missing `vscode-languageclient`) | Repackage with `vsce package` (dependencies included); do not use `--no-dependencies` without bundling |
 | No diagnostics | Wrong language id | Ensure file extension maps to `spice` |
-| Stale diagnostics | Server crash | Check Output → SPICE LSP; restart server |
-| Wrong binary arch | Download mismatch | Pick correct release asset |
+| Stale diagnostics | Server crash | Check Output → SPICE Language Server; restart server |
+| Wrong binary arch | Download mismatch / unsupported platform | Pick correct release asset or build from source |
 
 ## Beyond VS Code
 

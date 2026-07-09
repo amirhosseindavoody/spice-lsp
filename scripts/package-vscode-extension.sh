@@ -74,6 +74,16 @@ fi
 cd "$EXT_DIR"
 npm install
 npm run compile
-npx vsce package --no-dependencies
+# Include runtime npm dependencies (vscode-languageclient). Do not pass
+# --no-dependencies: the extension is not webpack-bundled, so omitting
+# node_modules leaves Marketplace installs unable to activate.
+npx vsce package
 
-echo "VSIX written to $EXT_DIR/*.vsix"
+VSIX="$(ls -t "$EXT_DIR"/*.vsix | head -1)"
+# Avoid `grep -q` under `pipefail`: early exit SIGPIPEs unzip and falsely fails the check.
+if ! unzip -l "$VSIX" | grep -F 'extension/node_modules/vscode-languageclient/' >/dev/null; then
+  echo "Packaged VSIX is missing vscode-languageclient: $VSIX" >&2
+  exit 1
+fi
+
+echo "VSIX written to $VSIX"
