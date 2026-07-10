@@ -3,16 +3,17 @@
   "kind": "directive",
   "name": ".data",
   "summary": "Define a named data table for data-driven sweeps (HSPICE)",
-  "syntax": ".DATA datanm pnam1 [pnam2 ...]\n+ pval1 [pval2 ...]\n+ ...\n.ENDDATA",
+  "syntax": ".DATA datanm pnam1 [pnam2 ...]\npval1 [pval2 ...]\n...\n.ENDDATA",
   "parameters": [
     { "name": "datanm", "description": "Data-block name referenced by DATA=datanm on .DC / .AC / .TRAN." },
     { "name": "pnam", "description": "Parameter column name (must be declared with .PARAM)." },
     { "name": "pval", "description": "Row of values; column count matches the parameter list." }
   ],
   "examples": [
-    ".DATA load_sweep rload\n+ 1k\n+ 10k\n+ 100k\n.ENDDATA",
+    ".DATA load_sweep rload\n1k\n10k\n100k\n.ENDDATA",
+    ".DATA load_sweep rload\n+ 1k\n+ 10k\n.ENDDATA",
     ".DC DATA=load_sweep"
   ],
   "seeAlso": ["hspice.directive.dc", "shared.directive.param", "hspice.directive.tran"],
-  "dialectNotes": "HSPICE supports inline .DATA … .ENDDATA blocks and external/MER file forms. Analysis statements select a block with DATA=datanm (optionally DATA=datanm(Nums))."
+  "dialectNotes": "HSPICE supports inline .DATA … .ENDDATA blocks and external/MER file forms. Value rows may be bare (no leading `+`) or classic `+` continuations. Analysis statements select a block with DATA=datanm (optionally DATA=datanm(Nums))."
 }

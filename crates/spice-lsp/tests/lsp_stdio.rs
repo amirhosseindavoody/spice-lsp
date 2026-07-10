@@ -580,6 +580,43 @@ async fn valid_netlist_publishes_no_diagnostics() {
 }
 
 #[tokio::test]
+async fn hspice_data_block_without_plus_publishes_no_diagnostics() {
+    // HSPICE allows bare multi-line .DATA rows (no leading '+'). The LSP must
+    // not publish syntax errors for those lines.
+    let uri = "file:///test/hspice-data-block.cir";
+    let source = fixture("valid/hspice-data-block.cir");
+
+    let mut server = LspProcess::spawn().await;
+    handshake_with_dialect(&mut server, "hspice").await;
+    server
+        .send(json!({
+            "jsonrpc": "2.0",
+            "method": "textDocument/didOpen",
+            "params": {
+                "textDocument": {
+                    "uri": uri,
+                    "languageId": "spice",
+                    "version": 1,
+                    "text": source
+                }
+            }
+        }))
+        .await;
+
+    let notification = server
+        .read_notification("textDocument/publishDiagnostics")
+        .await;
+    let diagnostics = notification["params"]["diagnostics"]
+        .as_array()
+        .expect("diagnostics array");
+    assert!(
+        diagnostics.is_empty(),
+        "expected no diagnostics for bare .DATA rows, got {diagnostics:?}"
+    );
+    server.shutdown().await;
+}
+
+#[tokio::test]
 async fn sp_and_spf_uris_publish_diagnostics() {
     // Extension maps .sp / .spf → language id `spice`; the server is URI-agnostic.
     for (uri, fixture_name) in [

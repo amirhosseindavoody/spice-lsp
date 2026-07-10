@@ -25,6 +25,7 @@ Shipped today:
 | No Windows arm64 bundled binary | Set `spiceLsp.serverPath` or put `spice-lsp` on `PATH` |
 | Linux bundled binary needs glibc 2.31+ | Upgrade the host OS, or build `spice-lsp` locally and set `spiceLsp.serverPath` |
 | Shared grammar for all dialects | Dialect-specific parse quirks land in later phases; hover/docs already switch |
+| Bare numeric lines outside `.DATA` | Prefer `+` continuations or keep value rows inside `.DATA` … `.ENDDATA` |
 
 ## Post-MVP: dialect reference
 

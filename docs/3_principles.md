@@ -37,7 +37,7 @@ Steps 1–4 build the pipeline; step 5 is where the tool becomes a SPICE-aware a
 
 - **Actionable squiggles** — Clear message, stable range, stable diagnostic code (e.g. `spice/floating-net`).
 - **Graceful partial files** — Incomplete subcircuits during editing must not block analysis of the rest of the buffer.
-- **Respect line continuations** — The `+` character is first-class in the grammar.
+- **Respect line continuations** — The `+` character is first-class in the grammar; HSPICE `.DATA` value rows may also continue without `+`.
 - **Documentation you trust** — Reference hover reads like a concise manual entry: syntax, units, examples. Missing entries show nothing rather than wrong text.
 - **Warn, don’t nag** — Connectivity warnings are severity `Warning`, configurable, and scoped to reduce false positives on intentional open nodes.
 - **Low configuration** — Sensible defaults; dialect and diagnostics toggles via settings when needed.
