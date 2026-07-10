@@ -99,8 +99,8 @@ _Dialect overlay (replaces shared entry with the same name)._
 
 ```
 .DATA datanm pnam1 [pnam2 ...]
-+ pval1 [pval2 ...]
-+ ...
+pval1 [pval2 ...]
+...
 .ENDDATA
 ```
 
@@ -113,13 +113,17 @@ _Dialect overlay (replaces shared entry with the same name)._
 **Examples**
 
 - `.DATA load_sweep rload
+1k
+10k
+100k
+.ENDDATA`
+- `.DATA load_sweep rload
 + 1k
 + 10k
-+ 100k
 .ENDDATA`
 - `.DC DATA=load_sweep`
 
-_HSPICE supports inline .DATA … .ENDDATA blocks and external/MER file forms. Analysis statements select a block with DATA=datanm (optionally DATA=datanm(Nums))._
+_HSPICE supports inline .DATA … .ENDDATA blocks and external/MER file forms. Value rows may be bare (no leading `+`) or classic `+` continuations. Analysis statements select a block with DATA=datanm (optionally DATA=datanm(Nums))._
 
 **See also:** `hspice.directive.dc`, `shared.directive.param`, `hspice.directive.tran`
 

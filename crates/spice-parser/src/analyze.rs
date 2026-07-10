@@ -191,4 +191,27 @@ mod tests {
             result.index.document_symbols
         );
     }
+
+    #[test]
+    fn hspice_data_block_bare_rows_have_no_diagnostics() {
+        let source = fixture("valid/hspice-data-block.cir");
+        let result = analyze_with_dialect(&source, Dialect::Hspice);
+        assert!(
+            result.diagnostics.is_empty(),
+            "bare .DATA rows should not be syntax errors: {:?}",
+            result.diagnostics
+        );
+        assert!(!result.tree.root_node().has_error());
+    }
+
+    #[test]
+    fn hspice_data_block_plus_rows_still_ok() {
+        let source = fixture("valid/hspice-data-block-plus.cir");
+        let result = analyze_with_dialect(&source, Dialect::Hspice);
+        assert!(
+            result.diagnostics.is_empty(),
+            "unexpected diagnostics: {:?}",
+            result.diagnostics
+        );
+    }
 }

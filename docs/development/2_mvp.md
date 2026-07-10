@@ -79,6 +79,7 @@ Start small. The grammar must recognize:
 - Instance lines: letter + name + nodes + value/model
 - Dot directives: `.subckt`, `.ends`, `.model`, `.tran`, `.end`
 - Continuation lines starting with `+`
+- Bare numeric / engineering-value rows (HSPICE `.DATA` tables without leading `+`)
 
 **Layout:**
 

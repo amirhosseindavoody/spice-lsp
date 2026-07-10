@@ -26,6 +26,10 @@
         },
         {
           "type": "SYMBOL",
+          "name": "data_value_line"
+        },
+        {
+          "type": "SYMBOL",
           "name": "instance_line"
         }
       ]
@@ -115,6 +119,26 @@
                 "type": "PATTERN",
                 "value": "[^\\n]"
               }
+            }
+          ]
+        }
+      }
+    },
+    "data_value_line": {
+      "type": "TOKEN",
+      "content": {
+        "type": "PREC",
+        "value": 1,
+        "content": {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "PATTERN",
+              "value": "[+-]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?(?:[TtGgMmKkUuNnPpFf]|meg|mil)?"
+            },
+            {
+              "type": "PATTERN",
+              "value": "[^\\n]*"
             }
           ]
         }

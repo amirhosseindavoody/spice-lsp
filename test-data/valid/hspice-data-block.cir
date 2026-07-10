@@ -1,0 +1,9 @@
+* HSPICE .DATA block with bare multi-line rows (no leading +)
+.param rload=1k cload=1p
+.data load_sweep rload cload
+1k 1p
+10k 10p
+100k 100p
+.enddata
+.dc DATA=load_sweep
+.end

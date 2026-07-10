@@ -17,6 +17,10 @@
           "named": true
         },
         {
+          "type": "data_value_line",
+          "named": true
+        },
+        {
           "type": "dot_directive_line",
           "named": true
         },
@@ -33,6 +37,10 @@
   },
   {
     "type": "continuation_line",
+    "named": true
+  },
+  {
+    "type": "data_value_line",
     "named": true
   },
   {

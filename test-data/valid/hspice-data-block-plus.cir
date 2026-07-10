@@ -1,0 +1,9 @@
+* HSPICE .DATA block using classic + continuations (still valid)
+.param rload=1k
+.data load_sweep rload
++ 1k
++ 10k
++ 100k
+.enddata
+.dc DATA=load_sweep
+.end
