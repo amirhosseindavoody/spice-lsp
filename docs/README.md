@@ -1,6 +1,6 @@
 # Introduction
 
-**Last verified against:** include/lib resolution — `.include` / `.inc` and HSPICE `.lib 'file' entry` resolve `.model` / `.subckt` for diagnostics and go-to-definition; `spiceLsp.libraryPaths`; multi-dialect hover corpus (default HSPICE); VS Code associations for `.inc` / `.lib`
+**Last verified against:** docs rewritten past MVP framing — include/lib resolution, multi-dialect hover (default HSPICE), outline/navigation/diagnostics; completion, formatter, and connectivity still planned
 
 spice-lsp is a language server and VS Code extension for SPICE circuit netlists. It gives you editor feedback while you write `.cir`, `.sp`, `.spf`, `.inc`, `.lib`, and related files — without running a simulator.
 

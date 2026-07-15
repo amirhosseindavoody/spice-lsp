@@ -1,6 +1,6 @@
 # VS Code Integration
 
-End goal for spice-lsp: a **VS Code extension** that launches the Rust language server and provides a first-class editing experience for SPICE netlists.
+The **VS Code extension** launches the Rust language server and provides a first-class editing experience for SPICE netlists.
 
 This chapter covers extension layout, development workflow, configuration, and publishing.
 

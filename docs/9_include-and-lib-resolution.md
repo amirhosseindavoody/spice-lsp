@@ -12,7 +12,7 @@ How spice-lsp resolves `.model`, `.subckt`, and related symbols across `.include
 | Go to definition | Jumps to the defining `.model` / `.subckt` in the included or library file |
 | Missing path | `spice/include-not-found` (or `spice/lib-section-not-found`) on the include/lib directive |
 
-Outline (`documentSymbol`) stays **file-local**. Find references stays in the open buffer for this phase (cross-file references may expand later).
+Outline (`documentSymbol`) stays **file-local**. Find references stays in the open buffer today (cross-file references may expand later).
 
 ## Directive shapes
 
@@ -55,7 +55,7 @@ Default max nesting depth is **16** (aligned with common HSPICE nested-`.LIB` li
 |---------|---------------------|
 | `publishDiagnostics` | Uses include graph when publishing for an open document |
 | `textDocument/definition` | May return a `Location` in another file URI |
-| `textDocument/references` | Same-buffer only (this phase) |
+| `textDocument/references` | Same-buffer only |
 | `textDocument/documentSymbol` | Same-buffer only |
 | `textDocument/hover` | File-local symbols still prefer the open buffer; dialect corpus unchanged |
 
@@ -77,7 +77,7 @@ Open buffers win over disk content when the resolved path matches an open docume
 | `spice/include-cycle` | Include/lib graph would revisit a file already on the stack |
 | `spice/unknown-model` | Model/subckt still missing after the include closure is merged |
 
-## Limits (this phase)
+## Limits
 
 - No workspace-wide `workspace/symbol` yet
 - No automatic PDK discovery beyond `libraryPaths`

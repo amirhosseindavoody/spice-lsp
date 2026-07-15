@@ -2,7 +2,7 @@
 
 Design for [issue #16](https://github.com/amirhosseindavoody/spice-lsp/issues/16): selectable SPICE dialects (default **HSPICE**), retained **Ngspice** support, a maintainable system for growing syntax/reference knowledge, and reuse of that data for hover (and later completion).
 
-**Status:** Phase A (dialect switch) and Phase B (reference corpus + hover) implemented.  
+**Status:** Dialect switch and reference corpus + hover are implemented. Remaining work: dialect-sensitive diagnostics/grammar and deeper LTspice coverage.  
 **Related:** [Dialect reference and net semantics](../8_dialect-reference-and-semantics.md), [LSP features](../5_lsp-features.md), [Architecture](../4_architecture.md).
 
 ---
@@ -24,8 +24,8 @@ Design for [issue #16](https://github.com/amirhosseindavoody/spice-lsp/issues/16
 - Full HSPICE / LTspice grammar parity on day one
 - Scraping simulator manuals at runtime (bash-lsp `man` / explainshell style)
 - Per-file dialect auto-detection from content (may come later as a hint)
-- Formatter dialect profiles (still v0.4+)
-- Connectivity analysis (still v0.5; dialect-agnostic graph with dialect-specific ground aliases later)
+- Formatter dialect profiles (planned)
+- Connectivity analysis (planned; dialect-agnostic graph with dialect-specific ground aliases later)
 
 ---
 
@@ -248,7 +248,7 @@ struct DialectProfile {
 ```
 cursor token
   1. dialect reference lookup (kind + name + active dialect)
-  2. file-local hover (subckt pins, in-file .model / .param)     // v0.3 slice
+  2. file-local hover (subckt pins, in-file .model / .param)
   3. null
 ```
 
@@ -297,38 +297,28 @@ TextMate grammar stays shared initially; dialect-specific highlighting can wait.
 
 ---
 
-## 9. Phased delivery
+## 9. Delivery status
 
-### Phase A — Dialect switch plumbing (unblocks #16 UX)
+### Shipped — Dialect switch
 
 - Setting + command + status bar; default **hspice**.
 - Server accepts dialect; re-analyzes on change.
-- `DialectProfile` stub; **behavior still matches today’s Ngspice parser** for both `hspice` and `ngspice` except profile metadata / empty HSPICE corpus.
+- `DialectProfile` for dialect metadata; parsing still largely shared across dialects.
 - Docs: default dialect, how to switch.
 
-**Exit criteria:** user can switch dialects; Ngspice fixtures pass with `spiceLsp.dialect=ngspice`; HSPICE default does not break open/diagnostics smoke tests.
+### Shipped — Reference crate + hover
 
-### Phase B — Reference crate + hover
-
-- Stand up `reference/` schema + `_shared` + starter `hspice` / `ngspice` entries (small set: `.subckt`, `.ends`, `.model`, `.param`, `.tran`, `R`, `C`, `X`).
-- Grow HSPICE overlays for analysis/control directives requested in follow-ups (`.data`, multi-mode `.dc`, `.op`, plus `.ac` / `.measure` / `.probe` / `.lib` / …).
+- `reference/` schema + `_shared` + `hspice` / `ngspice` / stub `ltspice` entries.
+- HSPICE overlays for analysis/control directives (`.data`, multi-mode `.dc`, `.op`, plus `.ac` / `.measure` / `.probe` / `.lib` / …).
 - `spice-reference` crate + validate/codegen pixi tasks.
-- Implement `textDocument/hover` with layered resolution.
-- Snapshot tests per dialect.
+- `textDocument/hover` with layered resolution and snapshot tests per dialect.
+- Catalog pages under `docs/reference/` generated from the corpus (`reference-docs` / `reference-docs-check`).
 
-### Phase C — Dialect-sensitive diagnostics / grammar
+### Planned — Dialect-sensitive diagnostics / grammar
 
 - Unknown-directive / option lists from corpus.
 - Comment / continuation profile differences.
 - Split grammar only where needed; grow LTspice.
-
-### Phase D — Catalog docs
-
-- Generate mdBook pages under `docs/reference/` from the embedded corpus (`spice-reference-catalog`).
-- Pixi: `reference-docs` (write) and `reference-docs-check` (CI drift guard).
-- Still one SSOT: edit JSON under `reference/`, then regenerate.
-
-Issue #16 is satisfied by **Phase A + a clear path through B**; B can ship in the same epic as follow-up PRs.
 
 ---
 
@@ -350,7 +340,7 @@ Issue #16 is satisfied by **Phase A + a clear path through B**; B can ship in th
 | Topic | Decision |
 |-------|----------|
 | Default dialect | **HSPICE** per #16 (overrides earlier docs that said Ngspice default) |
-| One grammar vs many | **One shared grammar in Phase A–B**; profile flags first |
+| One grammar vs many | **One shared grammar for now**; profile flags first |
 | Doc authoring medium | **JSON under `reference/`**, not Rust comments |
 | External doc services | **Out of scope**; optional later, opt-in only |
 | LTspice | Enum + stub corpus early; deep support later |
@@ -358,16 +348,16 @@ Issue #16 is satisfied by **Phase A + a clear path through B**; B can ship in th
 
 ---
 
-## 12. Open questions (resolve during Phase A implementation)
+## 12. Open questions
 
-1. Should dialect be **workspace-only** or allow **per-file** override in v1?
-2. Do we embed the full corpus in the binary, or load from an extension-relative path for faster iteration?
-3. Minimum HSPICE starter set for Phase B (which directives matter first for the author’s flows)?
-4. Status bar vs Command Palette only for v1 UX?
+1. Should dialect be **workspace-only** or allow **per-file** override?
+2. Do we keep the full corpus embedded in the binary, or also support loading from an extension-relative path for faster iteration?
+3. Which remaining HSPICE / LTspice constructs matter most for authoring flows?
+4. Any UX beyond status bar + Command Palette for dialect switching?
 
 ---
 
-## 13. Implementation checklist (when coding starts)
+## 13. Implementation checklist
 
 - [x] `spiceLsp.dialect` + `spiceLsp.setDialect` + status bar
 - [x] Server session dialect + config update path
@@ -377,9 +367,9 @@ Issue #16 is satisfied by **Phase A + a clear path through B**; B can ship in th
 - [x] Expand HSPICE corpus: `.data`, `.dc` (sweep modes), `.op`, plus common controls (`.ac`, `.measure`, `.probe`, `.lib`, …)
 - [x] `spice-reference` + validate/codegen tasks
 - [x] Hover provider + snapshots
-- [x] Close #16 when Phase A is shipped and Phase B is scheduled/linked
-- [ ] Phase C: dialect-sensitive diagnostics / grammar splits
-- [x] Phase D: catalog docs from JSON (`docs/reference/`, `reference-docs` / `reference-docs-check`)
+- [x] Close #16
+- [x] Catalog docs from JSON (`docs/reference/`, `reference-docs` / `reference-docs-check`)
+- [ ] Dialect-sensitive diagnostics / grammar splits
 
 ---
 
