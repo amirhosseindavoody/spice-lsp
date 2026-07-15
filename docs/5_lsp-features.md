@@ -171,4 +171,4 @@ v0.2 adds:
 
 9. (v0.5) Open semantic fixture → dangling / floating warnings; hover snapshot matches reference entry
 
-See [Demo and testing](development/3_demo-and-test.md).
+See [Demo and testing](development/2_demo-and-test.md).

@@ -87,9 +87,9 @@ The full capability list in sections 2–3 is the **north star**. The first deli
 | M4 | tower-lsp stdio server | LSP integration test |
 | M5 | `test-data/` fixtures | CI green on `pixi run test` |
 | M6 | VS Code extension | F5 → squiggles on invalid netlist |
-| M7 | Documented demo script | [Demo and testing](../development/3_demo-and-test.md) |
+| M7 | Documented demo script | [Demo and testing](../development/2_demo-and-test.md) |
 
-Detailed steps: [MVP guide](../development/2_mvp.md).
+See [Demo and testing](../development/2_demo-and-test.md) for smoke and automation steps.
 
 ### 4.0.3 Demo and test strategy
 
@@ -111,7 +111,7 @@ Distribution path:
 2. **Early adopters:** side-load `.vsix` built with `vsce package`
 3. **General availability:** Marketplace publish with platform-specific binary download or bundle
 
-Extension architecture (thin Node client, Rust server): [VS Code integration](../development/4_vscode-integration.md).
+Extension architecture (thin Node client, Rust server): [VS Code integration](../development/3_vscode-integration.md).
 
 Post-MVP features roll out in phases documented in [Architecture](../4_architecture.md) and [LSP features](../5_lsp-features.md). Deep semantics (reference library + net connectivity) are specified in [Dialect reference and net semantics](../8_dialect-reference-and-semantics.md). Multi-dialect selection, corpus authoring, and hover reuse are specified in [Multi-dialect support](2_multi-dialect-design.md).
 

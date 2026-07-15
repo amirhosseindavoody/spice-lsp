@@ -10,10 +10,10 @@ This book is generated with [mdBook](https://rust-lang.github.io/mdBook/) from t
 
 | Stage | Chapters |
 |-------|----------|
-| **Setup and ship MVP** | [Getting Started](2_getting-started.md) → [Principles](3_principles.md) → [MVP Guide](development/2_mvp.md) → [Demo and Testing](development/3_demo-and-test.md) |
+| **Setup** | [Getting Started](2_getting-started.md) → [Principles](3_principles.md) → [Demo and Testing](development/2_demo-and-test.md) |
 | **Understand the system** | [Architecture](4_architecture.md) → [LSP Features](5_lsp-features.md) |
-| **Long-term direction** | [Dialect Reference and Net Semantics](8_dialect-reference-and-semantics.md) → [Dialect reference catalog](reference/README.md) → [Formatter](6_formatter.md) → [Limitations](7_limitations.md) |
-| **VS Code** | [VS Code Integration](development/4_vscode-integration.md) |
+| **Long-term direction** | [Dialect Reference and Net Semantics](8_dialect-reference-and-semantics.md) → [Dialect reference catalog](reference/README.md) → [Formatter](6_formatter.md) → [Limitations](7_limitations.md) → [Include and Library Resolution](9_include-and-lib-resolution.md) |
+| **VS Code** | [VS Code Integration](development/3_vscode-integration.md) |
 
 Quick setup lives in the repository [README.md](../README.md).
 

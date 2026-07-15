@@ -73,7 +73,7 @@ Save as `demo.cir` in the repo root or under `test-data/`.
 4. Press **F5** to launch an Extension Development Host with the SPICE extension loaded
 5. Open `demo.cir` and confirm diagnostics appear
 
-Full extension setup: [VS Code integration](development/4_vscode-integration.md).
+Full extension setup: [VS Code integration](development/3_vscode-integration.md).
 
 ### Other editors
 
@@ -91,14 +91,14 @@ File extensions to associate: `.cir`, `.sp`, `.spf`, `.net`, `.ckt` (dialect-dep
 
 If you are new to the repo, follow this order:
 
-1. Read [Principles](3_principles.md) — know what is in and out of scope for MVP
-2. Follow [MVP guide](development/2_mvp.md) — implement or review each milestone
-3. Use [Demo and testing](development/3_demo-and-test.md) — verify each layer before adding features
-4. Read [Architecture](4_architecture.md) — understand where new code belongs
-5. Skim [Dialect reference and net semantics](8_dialect-reference-and-semantics.md) — long-term hover and connectivity goals (not MVP)
+1. Read [Principles](3_principles.md) — know what is in and out of scope
+2. Use [Demo and testing](development/2_demo-and-test.md) — verify each layer before adding features
+3. Read [Architecture](4_architecture.md) — understand where new code belongs
+4. Skim [Dialect reference and net semantics](8_dialect-reference-and-semantics.md) — long-term hover and connectivity goals
+5. Skim [Include and library resolution](9_include-and-lib-resolution.md) — cross-file model/subckt resolution
 
 ## Next steps
 
-- [MVP guide](development/2_mvp.md) — build the smallest demoable server
 - [Architecture](4_architecture.md) — crate layout and data flow
 - [Build](development/1_build.md) — pixi tasks and CI
+- [Demo and testing](development/2_demo-and-test.md) — smoke and integration checks

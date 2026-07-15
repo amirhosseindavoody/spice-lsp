@@ -190,7 +190,7 @@ Or use `launch.json` `env` / preLaunchTask to build Rust first.
 
 ### Verify integration
 
-Follow [Demo and testing](3_demo-and-test.md) VS Code section.
+Follow [Demo and testing](2_demo-and-test.md) VS Code section.
 
 ## Bundling the server binary
 
@@ -372,7 +372,6 @@ VS Code is the reference client; keep editor-specific code out of Rust.
 
 ## Related
 
-- [MVP guide](2_mvp.md) — M6 extension milestone
-- [Demo and testing](3_demo-and-test.md)
+- [Demo and testing](2_demo-and-test.md)
 - [LSP features](../5_lsp-features.md)
 - [Architecture](../4_architecture.md)

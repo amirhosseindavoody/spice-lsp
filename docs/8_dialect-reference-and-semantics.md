@@ -194,7 +194,7 @@ Attach diagnostics to the **node token** on the instance line when possible. Off
 | Connectivity | `test-data/semantic/floating-net.cir` → one `spice/floating-net` |
 | LSP | Integration test publishes warnings after open |
 
-See [Demo and testing](development/3_demo-and-test.md).
+See [Demo and testing](development/2_demo-and-test.md).
 
 ## Related
 
