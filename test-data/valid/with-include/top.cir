@@ -1,0 +1,5 @@
+* Top netlist with include
+.include 'models.inc'
+M1 d g s b nch
+X1 a b buffer
+.end

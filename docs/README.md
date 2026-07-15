@@ -1,6 +1,6 @@
 # Introduction
 
-**Last verified against:** v0.3 — multi-dialect setting (default HSPICE), expanded HSPICE reference corpus, bare `.DATA` value rows parse without syntax errors, dialect-aware hover, generated mdBook dialect catalog; VS Code commands register before LSP start; Linux glibc 2.31+ binaries; Marketplace publish on each push to `main`
+**Last verified against:** include/lib resolution — `.include` / `.inc` and HSPICE `.lib 'file' entry` resolve `.model` / `.subckt` for diagnostics and go-to-definition; `spiceLsp.libraryPaths`; multi-dialect hover corpus (default HSPICE); VS Code associations for `.inc` / `.lib`
 
 spice-lsp is a language server and formatter for SPICE circuit simulation netlists. The **end goal** is a VS Code extension that provides real-time diagnostics, dialect-aware documentation on hover, navigation, formatting, and connectivity warnings while editing `.cir`, `.sp`, `.spf`, and related files.
 

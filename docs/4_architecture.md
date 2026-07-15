@@ -101,6 +101,10 @@ Walk the CST to build:
 
 Enables navigation, duplicate-name warnings, and undefined reference checks.
 
+### Phase 2b — Include / library graph
+
+Follow `.include` / `.inc` and HSPICE `.lib 'file' entry` (section-filtered) to merge external model and subcircuit definitions. Used by unknown-model diagnostics and go-to-definition. Details: [Include and library resolution](9_include-and-lib-resolution.md).
+
 ### Phase 3 — Assist (v0.3)
 
 Use the symbol index for completion and **file-local hover** (subcircuit pin lists, `.model` parameters defined in the same buffer).

@@ -1,0 +1,7 @@
+* Process corners
+.lib TT
+.model nch_tt nmos level=1
+.endl TT
+.lib FF
+.model nch_ff nmos level=1
+.endl FF

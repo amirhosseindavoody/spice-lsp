@@ -170,7 +170,7 @@ Attach diagnostics to the **node token** on the instance line when possible. Off
 
 ### Limitations
 
-- Ignores `.include` files until cross-file analysis exists
+- Ignores nets from `.include` files until a cross-file net graph exists (model/subckt include resolution is separate — see [Include and library resolution](9_include-and-lib-resolution.md))
 - Ideal voltage sources and shorted nodes need special handling
 - Intentionally open probes may false-positive — allow suppress comments or config later
 

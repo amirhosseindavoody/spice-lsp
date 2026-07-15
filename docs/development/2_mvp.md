@@ -256,7 +256,7 @@ Do **not** implement these before M7 is done:
 - Formatter
 - Completion, hover, go-to-definition, references
 - Multi-dialect switching and `reference/` corpus
-- `.include` file resolution
+- `.include` file resolution *(now shipped — [Include and library resolution](../9_include-and-lib-resolution.md))*
 - Semantic analysis (duplicate names, undefined models, dangling nodes, floating nets)
 - Published VSIX / Marketplace listing (side-load is enough for MVP demo)
 

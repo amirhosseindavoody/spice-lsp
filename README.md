@@ -2,7 +2,7 @@
 
 Language server and formatter for [SPICE](https://en.wikipedia.org/wiki/SPICE) circuit simulation netlists.
 
-**Current status:** v0.3 — multi-dialect support (default HSPICE), curated reference hover, syntax + semantic diagnostics, outline, go to definition, find references; VS Code extension with bundled binaries; Marketplace publish on each push to `main`.
+**Current status:** include/lib resolution for `.model` / `.subckt` via `.include` and `.lib`, multi-dialect hover (default HSPICE), syntax + semantic diagnostics, outline, go to definition, find references; VS Code extension with bundled binaries.
 
 ## VS Code extension
 
@@ -71,7 +71,8 @@ First-time setup (repository admin, after the first deploy):
 | Stdio LSP server (`initialize`, text sync, `publishDiagnostics`) | Floating-net / dangling-node analysis |
 | Tree-sitter parse (shared grammar; dialect profile) | Formatter and completion |
 | Syntax + semantic diagnostics | Deep LTspice / HSPICE grammar splits |
-| Document outline, go to definition, find references | Multi-dialect reference libraries beyond starter set |
+| Document outline, go to definition, find references | Workspace-wide symbol search |
+| `.include` / `.lib` model & subckt resolution | Cross-file find-references / net graph |
 | Dialect setting (default HSPICE) + curated hover corpus | Per-file dialect overrides |
 | VS Code extension (Marketplace, bundled binaries, highlighting) | Windows arm64 bundled binary |
 

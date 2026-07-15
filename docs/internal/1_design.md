@@ -74,7 +74,8 @@ The full capability list in sections 2–3 is the **north star**. The first deli
 - Formatter, completion, go-to-definition, references
 - Dialect reference corpus and reference-powered hover
 - Floating-net / dangling-node analysis
-- Multi-dialect reference namespaces and `.include` resolution
+- Multi-dialect reference namespaces and deep grammar splits
+- Cross-file find-references and workspace symbol search (include graph already resolves definitions)
 
 ### 4.0.2 MVP milestones
 
