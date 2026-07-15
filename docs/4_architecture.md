@@ -1,19 +1,19 @@
 # Architecture
 
-System layout for spice-lsp: crates, data flow, and how each release phase adds capability on top of the last.
+System layout for spice-lsp: crates, data flow, and how analysis layers build on each other.
 
 ## Story in four layers
 
-Every feature belongs to one of these layers. MVP ships layer 1 only; later phases stack upward.
+Every feature belongs to one of these layers:
 
-| Layer | Responsibility | Ships in |
-|-------|----------------|----------|
-| **1. Parse** | Tree-sitter CST, syntax diagnostics | MVP |
-| **2. Index** | Symbols, scopes, cross-references | v0.2 |
-| **3. Assist** | Completion, basic hover from the file | v0.3 |
-| **4. Deep semantics** | Dialect reference docs, net connectivity, formatter | v0.4–v0.5 |
+| Layer | Responsibility | Status |
+|-------|----------------|--------|
+| **1. Parse** | Tree-sitter CST, syntax diagnostics | Shipped |
+| **2. Index** | Symbols, scopes, cross-references, include/lib graph | Shipped |
+| **3. Assist** | Hover (reference + file-local); completion | Hover shipped; completion planned |
+| **4. Deep semantics** | Net connectivity; formatter | Planned |
 
-Layer 4 is documented in detail in [Dialect reference and net semantics](8_dialect-reference-and-semantics.md).
+Layer 4 and the reference corpus are documented in [Dialect reference and net semantics](8_dialect-reference-and-semantics.md).
 
 ## High-level overview
 
@@ -29,44 +29,43 @@ Layer 4 is documented in detail in [Dialect reference and net semantics](8_diale
 │  ┌──────────────────────────────────────────────────────────┐   │
 │  │ tower-lsp Backend                                        │   │
 │  │  • text sync, publishDiagnostics                         │   │
-│  │  • (v0.2) symbols, definition, references                │   │
-│  │  • (v0.3) completion, hover (file-local)                 │   │
-│  │  • (v0.4) formatting                                     │   │
-│  │  • (v0.5) hover from reference corpus                    │   │
+│  │  • symbols, definition, references                       │   │
+│  │  • hover (reference corpus + file-local)                 │   │
+│  │  • (planned) completion, formatting                      │   │
 │  └────────────────────────┬─────────────────────────────────┘   │
 └───────────────────────────┼─────────────────────────────────────┘
                             │
           ┌─────────────────┼─────────────────┐
           ▼                 ▼                 ▼
-┌─────────────────┐ ┌───────────────┐ ┌──────────────────┐
+┌─────────────────┐ ┌────────────────┐ ┌──────────────────┐
 │ spice-parser    │ │ spice-reference│ │ tree-sitter-spice│
 │ parse, index,   │ │ dialect docs   │ │ grammar, queries │
-│ diagnose, format│ │ (v0.5)         │ │                  │
-└─────────────────┘ └───────────────┘ └──────────────────┘
+│ diagnose, format│ │                │ │                  │
+└─────────────────┘ └────────────────┘ └──────────────────┘
 ```
 
 ## Crate responsibilities
 
-| Crate / directory | Role | First shipped |
-|-------------------|------|---------------|
-| `crates/spice-lsp` | LSP server, JSON-RPC, document store | MVP |
-| `crates/spice-parser` | Parsing, symbol index, diagnostics, format | MVP (parse only) |
-| `crates/spice-reference` | Load and query dialect reference entries | v0.3 |
-| `tree-sitter-spice/` | Grammar and query files | MVP |
-| `reference/` | Curated JSON (or YAML) per dialect — **authored over time** | v0.5 |
-| `editors/vscode/` | VS Code extension client | MVP |
-| `test-data/` | Fixtures for syntax, semantics, hover snapshots | MVP |
+| Crate / directory | Role |
+|-------------------|------|
+| `crates/spice-lsp` | LSP server, JSON-RPC, document store |
+| `crates/spice-parser` | Parsing, symbol index, diagnostics; formatter home when implemented |
+| `crates/spice-reference` | Load and query dialect reference entries |
+| `tree-sitter-spice/` | Grammar and query files |
+| `reference/` | Curated JSON per dialect — authored over time |
+| `editors/vscode/` | VS Code extension client |
+| `test-data/` | Fixtures for syntax, semantics, hover snapshots |
 
 ## LSP server lifecycle
 
 1. **Client connects** via stdio; sends `initialize` with client capabilities and dialect option.
-2. **Server responds** with capabilities for the current phase (MVP: incremental sync only).
+2. **Server responds** with capabilities (incremental sync, diagnostics, symbols, definition, references, hover).
 3. **Document open/change** updates an in-memory map of open buffers.
 4. **On each change** (debounced ~150 ms):
    - Re-parse with Tree-sitter
-   - Run diagnostic passes for the enabled phase
+   - Run diagnostic passes (syntax + semantic + include resolution)
    - Send `textDocument/publishDiagnostics` with the document version
-5. **Hover / completion requests** (v0.3+) resolve against the CST; v0.5+ also queries `spice-reference`. Navigation requests re-analyze on demand so the symbol index stays current even when diagnostics are still debouncing.
+5. **Hover** resolves against the CST and `spice-reference`. Navigation requests re-analyze on demand so the symbol index stays current even when diagnostics are still debouncing.
 6. **Shutdown** exits cleanly.
 
 ### Document model
@@ -77,22 +76,21 @@ struct Document {
     text: String,
     tree: tree_sitter::Tree,
     version: i32,
-    // v0.2+
     symbols: SymbolTable,
-    // v0.5+
+    // planned
     net_graph: Option<NetGraph>,
 }
 ```
 
 ## Parser and analysis pipeline
 
-### Phase 1 — Syntax (MVP)
+### Syntax
 
 1. Parse buffer → CST
 2. Collect ERROR / MISSING nodes and hand-written checks (e.g. unclosed `.subckt`)
 3. Map to LSP `Diagnostic` (Error)
 
-### Phase 2 — Symbol index (v0.2)
+### Symbol index
 
 Walk the CST to build:
 
@@ -101,51 +99,30 @@ Walk the CST to build:
 
 Enables navigation, duplicate-name warnings, and undefined reference checks.
 
-### Phase 2b — Include / library graph
+### Include / library graph
 
 Follow `.include` / `.inc` and HSPICE `.lib 'file' entry` (section-filtered) to merge external model and subcircuit definitions. Used by unknown-model diagnostics and go-to-definition. Details: [Include and library resolution](9_include-and-lib-resolution.md).
 
-### Phase 3 — Assist (v0.3)
+### Assist
 
-Use the symbol index for completion and **file-local hover** (subcircuit pin lists, `.model` parameters defined in the same buffer).
+Use the symbol index and reference corpus for **hover** (subcircuit pin lists, in-file `.model` parameters, curated directive/element docs). Completion will reuse the same index and corpus.
 
-### Phase 4 — Format and dialect (v0.4)
+### Format and dialect
 
-Formatter engine reads CST → `TextEdit` list. Dialect setting selects grammar quirks and reference namespace.
+Dialect setting selects reference namespace and (later) grammar quirks / formatter profiles. Formatter engine reads CST → `TextEdit` list — see [Formatter](6_formatter.md).
 
-### Phase 5 — Reference docs and connectivity (v0.5)
+### Reference docs and connectivity
 
-Two parallel analyzers — see [Dialect reference and net semantics](8_dialect-reference-and-semantics.md):
+**Reference lookup (shipped):** Map cursor token → `reference/<dialect>/…` entry → markdown hover.
 
-**Reference lookup:** Map cursor token → `reference/<dialect>/…` entry → markdown hover.
-
-**Net graph:** Build terminal graph per scope → warn on dangling nodes and floating nets.
+**Net graph (planned):** Build terminal graph per scope → warn on dangling nodes and floating nets.
 
 ```
 Instance lines ──► NetGraph ──► dangling / floating diagnostics
 Cursor token   ──► ReferenceIndex ──► rich hover markdown
 ```
 
-## Phased rollout
-
-```mermaid
-flowchart TD
-    MVP[MVP: syntax + VS Code]
-    V02[v0.2: symbols + navigation]
-    V03[v0.3: completion + file hover]
-    V04[v0.4: formatter + dialect setting]
-    V05[v0.5: reference corpus + net checks]
-
-    MVP --> V02 --> V03 --> V04 --> V05
-```
-
-| Phase | User-visible outcome |
-|-------|----------------------|
-| **MVP** | Syntax error squiggles in VS Code |
-| v0.2 | Outline, go to definition, duplicate / undefined symbol warnings |
-| v0.3 | Element and directive completion; hover on subcircuits and models in file |
-| v0.4 | Format document; choose Ngspice / LTspice / HSPICE |
-| **v0.5** | Hover docs for directives and options from curated reference; warnings on dangling nodes and floating nets |
+See [Dialect reference and net semantics](8_dialect-reference-and-semantics.md).
 
 ## VS Code extension
 
@@ -164,7 +141,7 @@ See [VS Code integration](development/3_vscode-integration.md).
 
 ## Related reading
 
-- [Dialect reference and net semantics](8_dialect-reference-and-semantics.md) — v0.5 deep dive
+- [Dialect reference and net semantics](8_dialect-reference-and-semantics.md)
 - [LSP features](5_lsp-features.md) — method-by-method status
 - [Demo and testing](development/2_demo-and-test.md) — verification
 - [Design (internal)](internal/1_design.md) — full requirements

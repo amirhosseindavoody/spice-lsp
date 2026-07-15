@@ -247,7 +247,7 @@ cd editors/vscode && npm ci && npm run compile && npm test
 
 ---
 
-## Benchmarks (post-MVP)
+## Benchmarks
 
 Add `criterion` benches for parse + analyze on large fixtures:
 

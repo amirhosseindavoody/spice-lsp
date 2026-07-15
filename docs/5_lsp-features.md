@@ -1,31 +1,29 @@
 # LSP Features
 
-LSP methods spice-lsp implements or plans to implement, organized by release phase. MVP ships only syntax sync and diagnostics; richer behavior accumulates in later versions.
+LSP methods spice-lsp implements today, plus a short note on planned work.
 
 ## Capability matrix
 
-| LSP method / feature | MVP | v0.2 | v0.3 | v0.4 | v0.5 |
-|----------------------|-----|------|------|------|------|
-| `initialize` / `initialized` | ✓ | | | | |
-| `shutdown` / `exit` | ✓ | | | | |
-| `textDocument/didOpen` / `didChange` / `didClose` | ✓ | | | | |
-| `textDocument/publishDiagnostics` | ✓ | ✓ | | | syntax |
-| Syntax diagnostics | ✓ | | | | |
-| Duplicate / undefined symbol diagnostics | | ✓ | | | |
-| Dangling node / floating net diagnostics | | | | | ✓ |
-| `textDocument/documentSymbol` | | ✓ | | | |
-| `textDocument/definition` / `references` | | ✓ | | | |
-| `textDocument/completion` | | | ✓ | | |
-| `textDocument/hover` (dialect reference) | | | ✓ | | curated `reference/` |
-| `textDocument/hover` (file-local) | | | ✓ | | subcircuit pins, in-file models |
-| `textDocument/formatting` | | | | ✓ | |
-| `textDocument/didSave` (re-lint) | | | | ✓ | |
+| LSP method / feature | Status |
+|----------------------|--------|
+| `initialize` / `initialized` | Shipped |
+| `shutdown` / `exit` | Shipped |
+| `textDocument/didOpen` / `didChange` / `didClose` | Shipped |
+| `textDocument/publishDiagnostics` | Shipped |
+| Syntax diagnostics | Shipped |
+| Duplicate / undefined symbol diagnostics | Shipped |
+| Include / `.lib` resolution diagnostics | Shipped |
+| `textDocument/documentSymbol` | Shipped |
+| `textDocument/definition` / `references` | Shipped |
+| `textDocument/hover` (dialect reference + file-local) | Shipped |
+| Dangling node / floating net diagnostics | Planned |
+| `textDocument/completion` | Planned |
+| `textDocument/formatting` | Planned |
+| `textDocument/didSave` (re-lint) | Planned |
 
 Full specification of reference hover and net diagnostics: [Dialect reference and net semantics](8_dialect-reference-and-semantics.md).
 
-## MVP
-
-### Server capabilities
+## Server capabilities
 
 ```json
 {
@@ -34,7 +32,11 @@ Full specification of reference hover and net diagnostics: [Dialect reference an
       "openClose": true,
       "change": 2,
       "save": false
-    }
+    },
+    "documentSymbolProvider": true,
+    "definitionProvider": true,
+    "referencesProvider": true,
+    "hoverProvider": true
   },
   "serverInfo": { "name": "spice-lsp", "version": "0.1.0" }
 }
@@ -44,7 +46,7 @@ Full specification of reference hover and net diagnostics: [Dialect reference an
 
 Diagnostics arrive via server-initiated `textDocument/publishDiagnostics`.
 
-### Syntax diagnostics
+## Syntax diagnostics
 
 | Source | Example | Severity |
 |--------|---------|----------|
@@ -52,22 +54,7 @@ Diagnostics arrive via server-initiated `textDocument/publishDiagnostics`.
 | Parse ERROR node | `unexpected token` | Error |
 | Missing CST child | `expected node list` | Error |
 
-## v0.2 — Symbols and light semantics
-
-### Server capabilities
-
-Adds outline and navigation on top of MVP sync:
-
-```json
-{
-  "capabilities": {
-    "textDocumentSync": { "openClose": true, "change": 2 },
-    "documentSymbolProvider": true,
-    "definitionProvider": true,
-    "referencesProvider": true
-  }
-}
-```
+## Symbols and navigation
 
 **Document symbols** for outline / breadcrumbs:
 
@@ -82,7 +69,7 @@ Adds outline and navigation on top of MVP sync:
 
 **Include / library resolution:** `.include` / `.inc` and HSPICE `.lib 'file' entry` are followed so model and subcircuit definitions in those files participate in unknown-model checks and go-to-definition. See [Include and library resolution](9_include-and-lib-resolution.md).
 
-**Diagnostics:**
+## Semantic diagnostics
 
 | Code | Example | Severity |
 |------|---------|----------|
@@ -94,19 +81,13 @@ Adds outline and navigation on top of MVP sync:
 
 Diagnostics from `didChange` are **debounced** (~150 ms) so rapid typing does not re-analyze on every keystroke. `didOpen` publishes immediately. Navigation handlers refresh the in-memory index on demand.
 
-## v0.3 — Completion and file-local hover
-
-**Completion** contexts: element letters, directive names, in-scope model and subcircuit names, snippet templates for `.tran` / `.subckt`.
-
-**Hover (file-local only):** subcircuit port order, parameters from `.model` / `.subckt` in the open buffer. No curated reference yet — that is v0.5.
-
-## Dialect selection (issue #16)
+## Dialect selection
 
 `spiceLsp.dialect` is `hspice` \| `ngspice` \| `ltspice` (default **`hspice`**). The VS Code command **SPICE LSP: Set Dialect…** and a status-bar item change it. The same dialect selects the reference corpus for hover and (later) completion docs.
 
 Design: [Multi-dialect support](internal/2_multi-dialect-design.md).
 
-### Hover
+## Hover
 
 `textDocument/hover` resolves in order:
 
@@ -114,23 +95,17 @@ Design: [Multi-dialect support](internal/2_multi-dialect-design.md).
 2. File-local detail for `.subckt` / `.model` / `.param` symbols
 3. No hover
 
-## v0.4 — Formatting
+When the cursor is on a directive, option, element keyword, or documented expression form, the server loads the matching entry and returns markdown (summary, syntax, parameter table, examples). You maintain this corpus over time; the LSP indexes and renders it. Authoring guide: [Dialect reference and net semantics](8_dialect-reference-and-semantics.md#part-1--dialect-reference-library).
 
-Registers `documentFormattingProvider`. Formatter profiles may follow the active dialect later.
+## Planned
 
-See [Formatter](6_formatter.md).
+### Completion
 
-## v0.5 — Dialect reference hover and net connectivity
+Element letters, directive names, in-scope model and subcircuit names, snippet templates for `.tran` / `.subckt`. Documentation can attach the same reference entries used for hover.
 
-### Reference-powered hover
+### Formatting
 
-When the cursor is on a directive, option, element keyword, or documented expression form, the server loads the matching entry from `reference/<dialect>/` and returns markdown:
-
-- Summary and syntax
-- Parameter table with units
-- Examples and `seeAlso` links
-
-You maintain this corpus over time; the LSP only indexes and renders it. Authoring guide: [Dialect reference and net semantics](8_dialect-reference-and-semantics.md#part-1--dialect-reference-library).
+Registers `documentFormattingProvider`. Formatter profiles may follow the active dialect. See [Formatter](6_formatter.md).
 
 ### Connectivity diagnostics
 
@@ -139,36 +114,33 @@ You maintain this corpus over time; the LSP only indexes and renders it. Authori
 | `spice/dangling-node` | `node 'bias' is connected to only one device terminal` | Warning |
 | `spice/floating-net` | `net 'internal' has no DC path to ground` | Warning |
 
-Published alongside syntax diagnostics in `publishDiagnostics`. Configurable via `spiceLsp.diagnostics.*` settings.
+Published alongside other diagnostics in `publishDiagnostics`. Configurable via `spiceLsp.diagnostics.*` settings.
 
 ## Client configuration
 
-| Setting | Type | Default | Available |
-|---------|------|---------|-----------|
-| `spiceLsp.dialect` | string | `"hspice"` | dialect switch (see [Multi-dialect design](internal/2_multi-dialect-design.md)) |
-| `spiceLsp.libraryPaths` | string[] | `[]` | include / `.lib` search path |
-| `spiceLsp.include.maxDepth` | number | `16` | nested include / `.lib` depth cap |
-| `spiceLsp.diagnostics.danglingNodes` | boolean | `true` | v0.5+ |
-| `spiceLsp.diagnostics.floatingNets` | boolean | `true` | v0.5+ |
-| `spiceLsp.groundNodes` | string[] | `["0","gnd","GND"]` | v0.5+ |
-| `spiceLsp.trace.server` | string | `"off"` | MVP+ |
+| Setting | Type | Default | Notes |
+|---------|------|---------|-------|
+| `spiceLsp.dialect` | string | `"hspice"` | Dialect switch |
+| `spiceLsp.libraryPaths` | string[] | `[]` | Include / `.lib` search path |
+| `spiceLsp.include.maxDepth` | number | `16` | Nested include / `.lib` depth cap |
+| `spiceLsp.diagnostics.danglingNodes` | boolean | `true` | Planned connectivity pass |
+| `spiceLsp.diagnostics.floatingNets` | boolean | `true` | Planned connectivity pass |
+| `spiceLsp.groundNodes` | string[] | `["0","gnd","GND"]` | Planned connectivity pass |
+| `spiceLsp.trace.server` | string | `"off"` | LSP trace level |
 
 ## Testing
 
-Each phase adds integration tests for newly advertised capabilities. MVP priorities:
+Integration coverage includes:
 
 1. `initialize` returns expected capabilities
 2. Open invalid document → diagnostics notification
-3. Edit → updated diagnostics
-
-v0.2 adds:
-
+3. Edit → updated diagnostics (debounced)
 4. `documentSymbol` returns hierarchical outline for `.subckt` blocks
 5. `definition` on subcircuit reference jumps to `.subckt` definition
 6. `references` on subcircuit definition lists definition + usages; `includeDeclaration: false` omits the definition
 7. Semantic fixtures (`duplicate-instance.cir`, `unknown-subckt.cir`) produce warning codes
-8. Rapid `didChange` events coalesce into a single diagnostics publish after the debounce window
+8. Hover snapshots match reference entries for the active dialect
 
-9. (v0.5) Open semantic fixture → dangling / floating warnings; hover snapshot matches reference entry
+Planned: semantic fixtures for dangling / floating warnings once connectivity lands.
 
 See [Demo and testing](development/2_demo-and-test.md).

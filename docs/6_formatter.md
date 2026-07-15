@@ -1,6 +1,6 @@
 # Formatter
 
-Design for the SPICE netlist formatter. **Not part of MVP** — document the target behavior so parser and CST design stay compatible.
+Design for the SPICE netlist formatter. Not shipped yet — documented so parser and CST design stay compatible.
 
 ## Goals
 
@@ -71,11 +71,11 @@ The formatter lives in `crates/spice-parser` (or a sibling `crates/spice-format`
 1. Parse buffer to CST (reuse parser)
 2. Walk relevant nodes; compute column widths per alignment group
 3. Render each line to a string buffer
-4. Diff old vs new text → minimal `TextEdit` set (or full replacement for MVP formatter)
+4. Diff old vs new text → minimal `TextEdit` set (or full document replacement)
 
 Formatting must **not** mutate the parse tree in place; generate text from a pretty-printer pass.
 
-## Configuration (v0.4+)
+## Configuration
 
 | Option | Values | Default |
 |--------|--------|---------|

@@ -263,7 +263,7 @@ _Dialect overlay (replaces shared entry with the same name)._
 
 - `.tran 1n 100n`
 
-_LTspice support is a stub corpus in v0.3; grammar remains shared._
+_LTspice support is a stub corpus; grammar remains shared._
 
 ## Elements
 

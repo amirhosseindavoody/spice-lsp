@@ -1,19 +1,8 @@
 # Dialect Reference and Net Semantics
 
-Two major capabilities that come **after MVP**: a **curated dialect reference** the LSP consults for documentation, and **net connectivity analysis** that flags floating nets and dangling nodes. This chapter is the single source of truth for both; other pages link here rather than repeating detail.
+Two related capabilities: a **curated dialect reference** the LSP consults for documentation on hover, and **net connectivity analysis** that flags floating nets and dangling nodes. This chapter is the single source of truth for both; other pages link here rather than repeating detail.
 
-## Where this fits in the roadmap
-
-```
-MVP ──► v0.2 navigation ──► v0.3 completion ──► v0.4 formatter
-                                                      │
-                                                      ▼
-                                            v0.5 (this chapter)
-                                            • dialect reference → hover
-                                            • net graph → floating / dangling
-```
-
-MVP and the early phases build the parser, symbol index, and editor pipeline. **v0.5** adds semantic depth: explain SPICE constructs from your own reference files, and warn about suspicious connectivity before simulation.
+Reference-powered hover is **shipped**. Connectivity analysis is **planned**.
 
 ---
 
@@ -21,7 +10,7 @@ MVP and the early phases build the parser, symbol index, and editor pipeline. **
 
 ### Purpose
 
-SPICE dialects differ in directives (`.tran`, `.option`), device syntax, and parameter names. Generic hover text is not enough long term. spice-lsp will ship with — and grow — a **reference corpus you maintain**: structured descriptions of commands, options, element types, and common expressions **per dialect**.
+SPICE dialects differ in directives (`.tran`, `.option`), device syntax, and parameter names. Generic hover text is not enough. spice-lsp ships with — and grows — a **reference corpus you maintain**: structured descriptions of commands, options, element types, and common expressions **per dialect**.
 
 The LSP does not scrape simulator manuals at runtime. It **looks up entries** from checked-in reference data selected by the active dialect.
 
@@ -29,14 +18,14 @@ The LSP does not scrape simulator manuals at runtime. It **looks up entries** fr
 
 | Cursor on… | Hover shows (from reference) |
 |------------|------------------------------|
-| `.tran` | Syntax, parameters, units, Ngspice vs LTspice notes |
+| `.tran` | Syntax, parameters, units, dialect notes |
 | `.option` keyword | Meaning, default, valid values |
 | `M` (MOSFET line) | Terminal order, common parameters |
 | `{expression}` in `.param` | Allowed functions, unit conventions |
 
-Completion (v0.3+) can attach the same entries as `documentation` on completion items.
+Completion (when implemented) can attach the same entries as `documentation` on completion items.
 
-### Repository layout (planned)
+### Repository layout
 
 ```
 reference/
@@ -79,7 +68,7 @@ Each file describes one construct. Example `reference/ngspice/directives/tran.js
 }
 ```
 
-The Rust crate `spice-reference` (or a module in `spice-parser`) loads and indexes entries by `(dialect, kind, name)`.
+The Rust crate `spice-reference` loads and indexes entries by `(dialect, kind, name)`.
 
 ### LSP integration
 
@@ -94,20 +83,18 @@ Reference content is **your ongoing work**, independent of parser releases:
 
 1. Add or edit JSON under `reference/<dialect>/` or `reference/_shared/`.
 2. Run `pixi run reference-validate` to load and exercise the embedded corpus.
-3. Run `pixi run reference-docs` to regenerate the [Dialect reference catalog](reference/README.md) in the book.
+3. Run `pixi run reference-docs` to regenerate the [Dialect reference catalog](reference/README.md).
 4. Add or update hover snapshot tests when behavior changes.
 5. Ship with the binary (corpus is embedded at compile time via the `spice-reference` build script).
 
 Prefer small, focused files over one giant manual. Link related entries with `seeAlso`.
 
-### Phase placement
+### Coverage status
 
-| Phase | Reference scope |
-|-------|-----------------|
-| MVP | None |
-| v0.3 | Inline hover from CST + curated `reference/` lookup (HSPICE overlays for `.data` / `.dc` / `.op` and common controls) |
-| **v0.5** | Broader dialect coverage + connectivity analysis |
-| v0.5+ | LTspice / remaining HSPICE constructs grow incrementally |
+| Area | Scope |
+|------|-------|
+| Shipped | Inline hover from CST + curated `reference/` lookup (HSPICE overlays for `.data` / `.dc` / `.op` and common controls; Ngspice baseline) |
+| Growing | Broader dialect coverage; LTspice / remaining HSPICE constructs added incrementally |
 
 ---
 
@@ -149,7 +136,7 @@ CST instance lines
    Vec<Diagnostic>  → publishDiagnostics (Warning)
 ```
 
-Build the graph **per scope**: top level and inside each `.subckt` separately. Subcircuit ports are connections to the parent scope, not isolated graphs (v0.5.1+).
+Build the graph **per scope**: top level and inside each `.subckt` separately. Subcircuit ports are connections to the parent scope, not isolated graphs.
 
 ### Diagnostic examples
 
@@ -160,7 +147,7 @@ Build the graph **per scope**: top level and inside each `.subckt` separately. S
 
 Attach diagnostics to the **node token** on the instance line when possible. Offer a single diagnostic per net, not one per terminal.
 
-### Configuration (future)
+### Configuration (planned)
 
 | Setting | Default | Effect |
 |---------|---------|--------|
@@ -174,13 +161,12 @@ Attach diagnostics to the **node token** on the instance line when possible. Off
 - Ideal voltage sources and shorted nodes need special handling
 - Intentionally open probes may false-positive — allow suppress comments or config later
 
-### Phase placement
+### Status
 
-| Phase | Connectivity scope |
-|-------|-------------------|
-| MVP | None |
-| v0.2 | Optional: duplicate instance names only |
-| **v0.5** | Dangling nodes and floating nets in single-file scope |
+| Scope | Status |
+|-------|--------|
+| Duplicate instance names | Shipped (separate from connectivity) |
+| Dangling nodes and floating nets (single-file) | Planned |
 
 ---
 
@@ -198,7 +184,7 @@ See [Demo and testing](development/2_demo-and-test.md).
 
 ## Related
 
-- [Architecture](4_architecture.md) — crate layout and phased rollout
+- [Architecture](4_architecture.md) — crate layout and analysis layers
 - [LSP features](5_lsp-features.md) — capability matrix
 - [Limitations](7_limitations.md) — what analysis does not cover
 - [Design (internal)](internal/1_design.md) — requirements spec

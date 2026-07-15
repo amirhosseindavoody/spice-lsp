@@ -9,5 +9,5 @@
     { "name": "Tstop", "description": "Stop time.", "units": "s" }
   ],
   "examples": [".tran 1n 100n"],
-  "dialectNotes": "LTspice support is a stub corpus in v0.3; grammar remains shared."
+  "dialectNotes": "LTspice support is a stub corpus; grammar remains shared."
 }

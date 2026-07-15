@@ -19,7 +19,7 @@ cd spice-lsp
 pixi install
 ```
 
-`pixi install` creates a reproducible environment with the Rust compiler and (once added) Node.js, mdBook, and other dev tools.
+`pixi install` creates a reproducible environment with the Rust compiler, Node.js, and other dev tools.
 
 ## Verify the environment
 
@@ -30,9 +30,7 @@ pixi run cargo --version
 
 Both commands should succeed and report Rust ≥ 1.96.
 
-## Build (after MVP scaffolding lands)
-
-Once the Cargo workspace exists, build and test through pixi tasks:
+## Build and run
 
 ```bash
 pixi run build
@@ -63,9 +61,13 @@ V1 in 0 DC 1
 
 Save as `demo.cir` in the repo root or under `test-data/`.
 
-## Editor integration (MVP)
+## Editor integration
 
 ### VS Code (primary target)
+
+**From the Marketplace:** install [SPICE Language Support](https://marketplace.visualstudio.com/items?itemName=AmirhosseinDavoody.spice-lsp), open a `.cir` (or related) file, and edit.
+
+**From source (Extension Development Host):**
 
 1. Build the LSP binary: `pixi run build`
 2. Open the extension folder: `editors/vscode`
@@ -85,7 +87,7 @@ Any editor with generic LSP client support can point at the `spice-lsp` binary:
 | Helix | `[language-server.spice-lsp]` in `languages.toml` |
 | Zed | Extension or `lsp` settings (once published) |
 
-File extensions to associate: `.cir`, `.sp`, `.spf`, `.net`, `.ckt` (dialect-dependent).
+File extensions to associate: `.cir`, `.sp`, `.spf`, `.net`, `.ckt`, `.inc`, `.lib` (dialect-dependent).
 
 ## Recommended first contribution path
 
@@ -94,7 +96,7 @@ If you are new to the repo, follow this order:
 1. Read [Principles](3_principles.md) — know what is in and out of scope
 2. Use [Demo and testing](development/2_demo-and-test.md) — verify each layer before adding features
 3. Read [Architecture](4_architecture.md) — understand where new code belongs
-4. Skim [Dialect reference and net semantics](8_dialect-reference-and-semantics.md) — long-term hover and connectivity goals
+4. Skim [Dialect reference and net semantics](8_dialect-reference-and-semantics.md) — hover corpus and connectivity plans
 5. Skim [Include and library resolution](9_include-and-lib-resolution.md) — cross-file model/subckt resolution
 
 ## Next steps

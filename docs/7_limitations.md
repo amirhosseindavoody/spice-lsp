@@ -2,32 +2,31 @@
 
 Known constraints and unsupported behavior. Updated as the parser and LSP mature.
 
-## Current (v0.2)
+## Shipped today
 
-Shipped today:
-
-- Rust crates (`spice-parser`, `spice-lsp`), Tree-sitter grammar, and VS Code extension
-- Syntax diagnostics plus light semantic warnings (`spice/duplicate-name`, `spice/unknown-model`)
+- Rust crates (`spice-parser`, `spice-lsp`, `spice-reference`), Tree-sitter grammar, and VS Code extension
+- Syntax diagnostics plus semantic warnings (`spice/duplicate-name`, `spice/unknown-model`, include/lib path issues)
 - Document outline, go to definition, and find references
+- Dialect-aware hover from the curated `reference/` corpus (default HSPICE) plus file-local pin/model detail
+- `.include` / `.lib` resolution for model and subcircuit definitions
 - Debounced diagnostics on edit; `textDocument/references` honors `includeDeclaration`
 - Marketplace extension with bundled binaries, TextMate highlighting, and restart command
-- File associations for `.cir`, `.sp`, `.spf`, `.net`, and `.ckt`
+- File associations for `.cir`, `.sp`, `.spf`, `.net`, `.ckt`, `.inc`, and `.lib`
 
 ## Current limitations
 
 | Limitation | Workaround |
 |------------|------------|
-| Ngspice-oriented parsing | Avoid LTspice/HSPICE-specific syntax until v0.4 |
-| No connectivity analysis | Manual review; dangling/floating checks arrive in v0.5 |
+| Shared grammar for all dialects | Prefer common SPICE constructs; dialect-specific parse quirks grow over time; hover/docs already switch |
+| No connectivity analysis | Manual review until dangling/floating checks land |
 | Include graph is definition-focused | `.include` / `.lib` resolve models and subcircuits for diagnostics and go-to-definition; outline and find-references stay file-local — see [Include and library resolution](9_include-and-lib-resolution.md) |
-| No formatter or completion | Manual alignment / typing until v0.3–v0.4 |
+| No formatter or completion | Manual alignment / typing for now |
 | Comment toggle uses `*` only | `;` and `$` are highlighted as comments; VS Code allows one `lineComment` |
 | No Windows arm64 bundled binary | Set `spiceLsp.serverPath` or put `spice-lsp` on `PATH` |
 | Linux bundled binary needs glibc 2.31+ | Upgrade the host OS, or build `spice-lsp` locally and set `spiceLsp.serverPath` |
-| Shared grammar for all dialects | Dialect-specific parse quirks land in later phases; hover/docs already switch |
 | Bare numeric lines outside `.DATA` | Prefer `+` continuations or keep value rows inside `.DATA` … `.ENDDATA` |
 
-## Post-MVP: dialect reference
+## Dialect reference coverage
 
 The reference library under `reference/` grows **incrementally**:
 
@@ -38,9 +37,9 @@ The reference library under `reference/` grows **incrementally**:
 
 See [Dialect reference and net semantics](8_dialect-reference-and-semantics.md).
 
-## Post-MVP: connectivity analysis
+## Connectivity analysis (planned)
 
-Dangling-node and floating-net diagnostics are **heuristic**:
+Dangling-node and floating-net diagnostics will be **heuristic**:
 
 | Limitation | Detail |
 |------------|--------|
@@ -59,7 +58,7 @@ These warnings supplement — not replace — simulator and layout review.
 | Comments | `*`, `;`, `$` | `$` common | `*` |
 | Directives / options | Baseline corpus | Overrides in `reference/ltspice/` | Overrides in `reference/hspice/` |
 
-Tri-dialect parsing and reference namespaces target **v0.4–v0.5**. Current parsing is Ngspice-oriented.
+Parsing is still largely Ngspice-oriented; reference namespaces already switch with `spiceLsp.dialect`.
 
 ## Parser robustness
 
