@@ -19,7 +19,7 @@ Shipped today:
 |------------|------------|
 | Ngspice-oriented parsing | Avoid LTspice/HSPICE-specific syntax until v0.4 |
 | No connectivity analysis | Manual review; dangling/floating checks arrive in v0.5 |
-| Single-file analysis | `.include` not followed |
+| Include graph is definition-focused | `.include` / `.lib` resolve models and subcircuits for diagnostics and go-to-definition; outline and find-references stay file-local — see [Include and library resolution](9_include-and-lib-resolution.md) |
 | No formatter or completion | Manual alignment / typing until v0.3–v0.4 |
 | Comment toggle uses `*` only | `;` and `$` are highlighted as comments; VS Code allows one `lineComment` |
 | No Windows arm64 bundled binary | Set `spiceLsp.serverPath` or put `spice-lsp` on `PATH` |
@@ -44,7 +44,7 @@ Dangling-node and floating-net diagnostics are **heuristic**:
 
 | Limitation | Detail |
 |------------|--------|
-| Single file | Ignores nets defined across `.include` until cross-file index exists |
+| Single file | Net connectivity still ignores `.include` until a full cross-file net graph exists |
 | Ground aliases | Defaults to `0`, `gnd`, `GND`; exotic ground names may need config |
 | False positives | Intentionally open probe points may warn until suppression exists |
 | Not full ERC | Does not check layout, EM, or foundry rules |
@@ -71,7 +71,7 @@ Tri-dialect parsing and reference namespaces target **v0.4–v0.5**. Current par
 
 - UTF-16 positions per LSP spec
 - Stdio transport only
-- No workspace-wide symbol search until include-graph analysis exists
+- No workspace-wide symbol search yet (include graph is used for definitions, not `workspace/symbol`)
 - Diagnostics on `didChange` are debounced (~150 ms); navigation requests re-analyze on demand so the index stays current
 
 ## Reporting issues

@@ -80,12 +80,17 @@ Adds outline and navigation on top of MVP sync:
 
 **Navigation:** go to definition and find references for subcircuits, models, and parameters. `textDocument/references` honors `context.includeDeclaration` (omit definition sites when the client passes `false`).
 
+**Include / library resolution:** `.include` / `.inc` and HSPICE `.lib 'file' entry` are followed so model and subcircuit definitions in those files participate in unknown-model checks and go-to-definition. See [Include and library resolution](9_include-and-lib-resolution.md).
+
 **Diagnostics:**
 
 | Code | Example | Severity |
 |------|---------|----------|
 | `spice/duplicate-name` | `duplicate component name 'R1'` | Warning |
 | `spice/unknown-model` | `model 'nfet' not defined` | Warning |
+| `spice/include-not-found` | `include file not found: 'models.inc'` | Warning |
+| `spice/lib-section-not-found` | `library section 'TT' not found` | Warning |
+| `spice/include-cycle` | `include cycle involving '…'` | Warning |
 
 Diagnostics from `didChange` are **debounced** (~150 ms) so rapid typing does not re-analyze on every keystroke. `didOpen` publishes immediately. Navigation handlers refresh the in-memory index on demand.
 
@@ -141,6 +146,8 @@ Published alongside syntax diagnostics in `publishDiagnostics`. Configurable via
 | Setting | Type | Default | Available |
 |---------|------|---------|-----------|
 | `spiceLsp.dialect` | string | `"hspice"` | dialect switch (see [Multi-dialect design](internal/2_multi-dialect-design.md)) |
+| `spiceLsp.libraryPaths` | string[] | `[]` | include / `.lib` search path |
+| `spiceLsp.include.maxDepth` | number | `16` | nested include / `.lib` depth cap |
 | `spiceLsp.diagnostics.danglingNodes` | boolean | `true` | v0.5+ |
 | `spiceLsp.diagnostics.floatingNets` | boolean | `true` | v0.5+ |
 | `spiceLsp.groundNodes` | string[] | `["0","gnd","GND"]` | v0.5+ |
@@ -164,4 +171,4 @@ v0.2 adds:
 
 9. (v0.5) Open semantic fixture → dangling / floating warnings; hover snapshot matches reference entry
 
-See [Demo and testing](development/3_demo-and-test.md).
+See [Demo and testing](development/2_demo-and-test.md).

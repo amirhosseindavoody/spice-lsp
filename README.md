@@ -2,7 +2,7 @@
 
 Language server and formatter for [SPICE](https://en.wikipedia.org/wiki/SPICE) circuit simulation netlists.
 
-**Current status:** v0.3 — multi-dialect support (default HSPICE), curated reference hover, syntax + semantic diagnostics, outline, go to definition, find references; VS Code extension with bundled binaries; Marketplace publish on each push to `main`.
+**Current status:** include/lib resolution for `.model` / `.subckt` via `.include` and `.lib`, multi-dialect hover (default HSPICE), syntax + semantic diagnostics, outline, go to definition, find references; VS Code extension with bundled binaries.
 
 ## VS Code extension
 
@@ -14,7 +14,7 @@ pixi run ext-package
 code --install-extension editors/vscode/spice-lsp-0.2.0.vsix
 ```
 
-Marketplace publish is automated via GitHub Actions — see [VS Code integration](docs/development/4_vscode-integration.md#publishing).
+Marketplace publish is automated via GitHub Actions — see [VS Code integration](docs/development/3_vscode-integration.md#publishing).
 
 ## End goal
 
@@ -26,7 +26,7 @@ Ship a **VS Code extension** that starts the `spice-lsp` binary over stdio and p
 - **Dialect-aware documentation on hover** — curated reference files you maintain per Ngspice / LTspice / HSPICE (v0.5)
 - **Connectivity warnings** — dangling nodes and floating nets highlighted before simulation (v0.5)
 
-See [VS Code integration](docs/development/4_vscode-integration.md) and [Dialect reference and net semantics](docs/8_dialect-reference-and-semantics.md).
+See [VS Code integration](docs/development/3_vscode-integration.md) and [Dialect reference and net semantics](docs/8_dialect-reference-and-semantics.md).
 
 ## Prerequisites
 
@@ -71,13 +71,12 @@ First-time setup (repository admin, after the first deploy):
 | Stdio LSP server (`initialize`, text sync, `publishDiagnostics`) | Floating-net / dangling-node analysis |
 | Tree-sitter parse (shared grammar; dialect profile) | Formatter and completion |
 | Syntax + semantic diagnostics | Deep LTspice / HSPICE grammar splits |
-| Document outline, go to definition, find references | Multi-dialect reference libraries beyond starter set |
+| Document outline, go to definition, find references | Workspace-wide symbol search |
+| `.include` / `.lib` model & subckt resolution | Cross-file find-references / net graph |
 | Dialect setting (default HSPICE) + curated hover corpus | Per-file dialect overrides |
 | VS Code extension (Marketplace, bundled binaries, highlighting) | Windows arm64 bundled binary |
 
-**Build order (historical MVP):** Cargo workspace → minimal grammar → LSP skeleton → sample netlist fixtures → VS Code extension → integration test that speaks JSON-RPC.
-
-Full step-by-step instructions: [MVP guide](docs/development/2_mvp.md).
+**Build order (historical):** Cargo workspace → minimal grammar → LSP skeleton → sample netlist fixtures → VS Code extension → integration test that speaks JSON-RPC.
 
 ## Demo and test
 
@@ -88,7 +87,7 @@ Full step-by-step instructions: [MVP guide](docs/development/2_mvp.md).
 | Manual smoke test | Open a `.cir` file, run **SPICE LSP: Restart Server**, introduce a syntax error |
 | Extension in isolation | `cd editors/vscode && npm run compile && F5` (Extension Development Host) |
 
-Details: [Demo and testing](docs/development/3_demo-and-test.md).
+Details: [Demo and testing](docs/development/2_demo-and-test.md).
 
 ## Documentation
 
@@ -97,11 +96,11 @@ The book lives under `docs/` and is built with [mdBook](https://rust-lang.github
 | Chapter | Topic |
 |---------|-------|
 | [Getting started](docs/2_getting-started.md) | Setup, pixi workflow, first run |
-| [Architecture](docs/4_architecture.md) | Crates, phased rollout (MVP → v0.5) |
-| [Dialect reference and net semantics](docs/8_dialect-reference-and-semantics.md) | Curated docs + floating/dangling analysis (post-MVP) |
+| [Architecture](docs/4_architecture.md) | Crates, phased rollout |
+| [Dialect reference and net semantics](docs/8_dialect-reference-and-semantics.md) | Curated docs + floating/dangling analysis |
+| [Include and library resolution](docs/9_include-and-lib-resolution.md) | `.include` / `.lib` model and subckt resolution |
 | [Dialect reference catalog](docs/reference/README.md) | Generated mdBook pages from `reference/` JSON |
-| [MVP guide](docs/development/2_mvp.md) | Minimal implementation before more features |
-| [VS Code integration](docs/development/4_vscode-integration.md) | Extension structure and publishing |
+| [VS Code integration](docs/development/3_vscode-integration.md) | Extension structure and publishing |
 | [Design (internal)](docs/internal/1_design.md) | Requirements and capability spec |
 
 Navigation: [docs/SUMMARY.md](docs/SUMMARY.md).

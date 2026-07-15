@@ -170,7 +170,7 @@ Attach diagnostics to the **node token** on the instance line when possible. Off
 
 ### Limitations
 
-- Ignores `.include` files until cross-file analysis exists
+- Ignores nets from `.include` files until a cross-file net graph exists (model/subckt include resolution is separate — see [Include and library resolution](9_include-and-lib-resolution.md))
 - Ideal voltage sources and shorted nodes need special handling
 - Intentionally open probes may false-positive — allow suppress comments or config later
 
@@ -194,7 +194,7 @@ Attach diagnostics to the **node token** on the instance line when possible. Off
 | Connectivity | `test-data/semantic/floating-net.cir` → one `spice/floating-net` |
 | LSP | Integration test publishes warnings after open |
 
-See [Demo and testing](development/3_demo-and-test.md).
+See [Demo and testing](development/2_demo-and-test.md).
 
 ## Related
 

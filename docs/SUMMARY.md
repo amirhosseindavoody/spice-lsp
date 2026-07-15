@@ -11,6 +11,7 @@
 - [Formatter](6_formatter.md)
 - [Limitations](7_limitations.md)
 - [Dialect Reference and Net Semantics](8_dialect-reference-and-semantics.md)
+- [Include and Library Resolution](9_include-and-lib-resolution.md)
 
 # Dialect reference catalog
 
@@ -23,9 +24,8 @@
 # Development
 
 - [Build](development/1_build.md)
-- [MVP Guide](development/2_mvp.md)
-- [Demo and Testing](development/3_demo-and-test.md)
-- [VS Code Integration](development/4_vscode-integration.md)
+- [Demo and Testing](development/2_demo-and-test.md)
+- [VS Code Integration](development/3_vscode-integration.md)
 
 # Internal
 

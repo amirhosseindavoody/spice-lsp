@@ -1,0 +1,4 @@
+* Top netlist with .lib section call
+.lib 'corners.lib' TT
+M1 d g s b nch_tt
+.end

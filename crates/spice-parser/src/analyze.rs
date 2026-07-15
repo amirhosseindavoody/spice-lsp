@@ -23,6 +23,26 @@ pub fn analyze(source: &str) -> ParseResult {
 /// Phase A/B: the shared grammar is used for all dialects; `dialect` is stored
 /// for hover / future profile-sensitive diagnostics.
 pub fn analyze_with_dialect(source: &str, dialect: Dialect) -> ParseResult {
+    let lines = collect_classified_lines(source);
+    analyze_lines(source, dialect, &lines)
+}
+
+/// Classify every directive / instance line in `source` (Tree-sitter walk).
+pub fn collect_classified_lines(source: &str) -> Vec<(Span, LineKind)> {
+    let mut parser = Parser::new();
+    parser
+        .set_language(&tree_sitter_spice::language())
+        .expect("tree-sitter-spice language");
+    let tree = parser.parse(source, None).expect("parse succeeds");
+    collect_lines(source, tree.root_node())
+}
+
+/// Analyze pre-classified lines (shared by plain analyze and include resolution).
+pub fn analyze_lines(
+    source: &str,
+    dialect: Dialect,
+    lines: &[(Span, LineKind)],
+) -> ParseResult {
     let _profile = dialect.profile();
 
     let mut parser = Parser::new();
@@ -33,8 +53,7 @@ pub fn analyze_with_dialect(source: &str, dialect: Dialect) -> ParseResult {
     let tree = parser.parse(source, None).expect("parse succeeds");
     let root = tree.root_node();
 
-    let lines = collect_lines(source, root);
-    let (index, semantic_diagnostics) = build_index(source, &lines);
+    let (index, semantic_diagnostics) = build_index(source, lines);
 
     let mut diagnostics = tree_diagnostics(source, root);
     diagnostics.extend(semantic_diagnostics);

@@ -101,6 +101,10 @@ Walk the CST to build:
 
 Enables navigation, duplicate-name warnings, and undefined reference checks.
 
+### Phase 2b — Include / library graph
+
+Follow `.include` / `.inc` and HSPICE `.lib 'file' entry` (section-filtered) to merge external model and subcircuit definitions. Used by unknown-model diagnostics and go-to-definition. Details: [Include and library resolution](9_include-and-lib-resolution.md).
+
 ### Phase 3 — Assist (v0.3)
 
 Use the symbol index for completion and **file-local hover** (subcircuit pin lists, `.model` parameters defined in the same buffer).
@@ -147,7 +151,7 @@ flowchart TD
 
 Thin Node client: spawns `spice-lsp`, forwards LSP traffic, exposes dialect and diagnostic settings. No parsing in TypeScript.
 
-See [VS Code integration](development/4_vscode-integration.md).
+See [VS Code integration](development/3_vscode-integration.md).
 
 ## Performance targets
 
@@ -162,5 +166,5 @@ See [VS Code integration](development/4_vscode-integration.md).
 
 - [Dialect reference and net semantics](8_dialect-reference-and-semantics.md) — v0.5 deep dive
 - [LSP features](5_lsp-features.md) — method-by-method status
-- [MVP guide](development/2_mvp.md) — implementation order for layer 1
+- [Demo and testing](development/2_demo-and-test.md) — verification
 - [Design (internal)](internal/1_design.md) — full requirements

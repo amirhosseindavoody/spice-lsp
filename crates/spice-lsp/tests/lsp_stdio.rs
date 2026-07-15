@@ -421,6 +421,64 @@ async fn goto_definition_on_subckt_reference() {
 }
 
 #[tokio::test]
+async fn goto_definition_follows_include_file() {
+    let dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../../test-data/valid/with-include");
+    let top_path = dir.join("top.cir");
+    let uri = url::Url::from_file_path(&top_path).expect("top uri");
+    let source = std::fs::read_to_string(&top_path).expect("top.cir");
+    let offset = source.find("nch").expect("nch");
+
+    let mut server = LspProcess::spawn().await;
+    handshake_with_dialect(&mut server, "hspice").await;
+    server
+        .send(json!({
+            "jsonrpc": "2.0",
+            "method": "textDocument/didOpen",
+            "params": {
+                "textDocument": {
+                    "uri": uri.as_str(),
+                    "languageId": "spice",
+                    "version": 1,
+                    "text": source
+                }
+            }
+        }))
+        .await;
+    let diagnostics = server
+        .read_notification("textDocument/publishDiagnostics")
+        .await;
+    let diags = diagnostics["params"]["diagnostics"]
+        .as_array()
+        .expect("diagnostics array");
+    assert!(
+        !diags.iter().any(|d| d["code"] == "spice/unknown-model"),
+        "expected include to resolve nch/buffer: {diags:?}"
+    );
+
+    let (line, character) = byte_offset_to_line_col(&source, offset);
+    server
+        .send(json!({
+            "jsonrpc": "2.0",
+            "id": 31,
+            "method": "textDocument/definition",
+            "params": {
+                "textDocument": { "uri": uri.as_str() },
+                "position": { "line": line, "character": character }
+            }
+        }))
+        .await;
+    let response = server.read_response(31).await;
+    let location = &response["result"];
+    let def_uri = location["uri"].as_str().expect("uri");
+    assert!(
+        def_uri.ends_with("models.inc"),
+        "expected definition in models.inc, got {def_uri}"
+    );
+    server.shutdown().await;
+}
+
+#[tokio::test]
 async fn references_on_subckt_definition() {
     let uri = "file:///test/subckt.cir";
     let source = fixture("valid/subckt.cir");

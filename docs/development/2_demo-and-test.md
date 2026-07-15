@@ -1,6 +1,6 @@
 # Demo and Testing
 
-How to manually demo spice-lsp and automate tests at each layer. Use this page before and after every milestone in the [MVP guide](2_mvp.md).
+How to manually demo spice-lsp and automate tests at each layer.
 
 ## Testing pyramid
 
@@ -261,6 +261,5 @@ Track regressions against targets in [Architecture](../4_architecture.md).
 
 ## Related
 
-- [MVP guide](2_mvp.md)
-- [VS Code integration](4_vscode-integration.md)
+- [VS Code integration](3_vscode-integration.md)
 - [Build](1_build.md)

@@ -1,9 +1,13 @@
 use std::collections::HashMap;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Duration;
 
 use serde_json::Value;
-use spice_parser::{analyze_with_dialect, hover_token_at, Dialect, Index};
+use spice_parser::{
+    analyze_with_includes, disk_loader_with_overrides, hover_token_at, Dialect, IncludeResolution,
+    Index, ResolveOptions, DEFAULT_MAX_INCLUDE_DEPTH,
+};
 use spice_reference::ReferenceIndex;
 use tokio::sync::RwLock;
 use tokio::task::JoinHandle;
@@ -13,7 +17,7 @@ use tower_lsp::{Client, LanguageServer};
 use url::Url;
 
 use crate::convert::{
-    definition_location, position_to_byte_offset, reference_locations, span_to_range,
+    definition_location_with_includes, position_to_byte_offset, reference_locations, span_to_range,
     to_document_symbols, to_lsp_diagnostic,
 };
 
@@ -25,6 +29,22 @@ struct Document {
     text: String,
     version: i32,
     index: Index,
+    includes: IncludeResolution,
+}
+
+#[derive(Debug, Clone)]
+struct WorkspaceConfig {
+    library_paths: Vec<PathBuf>,
+    max_include_depth: usize,
+}
+
+impl Default for WorkspaceConfig {
+    fn default() -> Self {
+        Self {
+            library_paths: Vec::new(),
+            max_include_depth: DEFAULT_MAX_INCLUDE_DEPTH,
+        }
+    }
 }
 
 pub struct Backend {
@@ -32,6 +52,7 @@ pub struct Backend {
     documents: Arc<RwLock<HashMap<Url, Document>>>,
     debounce_tasks: Arc<RwLock<HashMap<Url, JoinHandle<()>>>>,
     dialect: Arc<RwLock<Dialect>>,
+    config: Arc<RwLock<WorkspaceConfig>>,
 }
 
 impl Backend {
@@ -41,11 +62,16 @@ impl Backend {
             documents: Arc::new(RwLock::new(HashMap::new())),
             debounce_tasks: Arc::new(RwLock::new(HashMap::new())),
             dialect: Arc::new(RwLock::new(Dialect::default())),
+            config: Arc::new(RwLock::new(WorkspaceConfig::default())),
         }
     }
 
     async fn current_dialect(&self) -> Dialect {
         *self.dialect.read().await
+    }
+
+    async fn current_config(&self) -> WorkspaceConfig {
+        self.config.read().await.clone()
     }
 
     fn dialect_from_init(params: &InitializeParams) -> Dialect {
@@ -58,10 +84,30 @@ impl Backend {
         Dialect::default()
     }
 
-    fn dialect_from_config(settings: &Value) -> Option<Dialect> {
+    fn config_from_settings(settings: &Value) -> Option<(Option<Dialect>, WorkspaceConfig)> {
         let spice = settings.get("spiceLsp")?;
-        let raw = spice.get("dialect")?.as_str()?;
-        Some(Dialect::parse_or_default(raw).0)
+        let dialect = spice
+            .get("dialect")
+            .and_then(Value::as_str)
+            .map(|raw| Dialect::parse_or_default(raw).0);
+
+        let mut config = WorkspaceConfig::default();
+        if let Some(paths) = spice.get("libraryPaths").and_then(Value::as_array) {
+            config.library_paths = paths
+                .iter()
+                .filter_map(|v| v.as_str())
+                .map(PathBuf::from)
+                .collect();
+        }
+        if let Some(depth) = spice
+            .get("include")
+            .and_then(|i| i.get("maxDepth"))
+            .and_then(Value::as_u64)
+        {
+            config.max_include_depth = depth as usize;
+        }
+
+        Some((dialect, config))
     }
 
     async fn set_dialect(&self, dialect: Dialect) {
@@ -71,18 +117,64 @@ impl Backend {
         }
     }
 
-    async fn analyze_and_store(&self, uri: &Url, text: &str) -> (Vec<Diagnostic>, Index) {
+    async fn set_config(&self, config: WorkspaceConfig) {
+        *self.config.write().await = config;
+    }
+
+    fn uri_to_path(uri: &Url) -> Option<PathBuf> {
+        uri.to_file_path().ok()
+    }
+
+    fn base_dir_for(uri: &Url) -> PathBuf {
+        Self::uri_to_path(uri)
+            .and_then(|p| p.parent().map(Path::to_path_buf))
+            .unwrap_or_else(|| PathBuf::from("."))
+    }
+
+    async fn open_buffer_overrides(&self) -> HashMap<PathBuf, String> {
+        let docs = self.documents.read().await;
+        let mut map = HashMap::new();
+        for (uri, doc) in docs.iter() {
+            if let Some(path) = Self::uri_to_path(uri) {
+                map.insert(path.clone(), doc.text.clone());
+                if let Ok(canon) = path.canonicalize() {
+                    map.insert(canon, doc.text.clone());
+                }
+            }
+        }
+        map
+    }
+
+    async fn analyze_document(
+        &self,
+        uri: &Url,
+        text: &str,
+    ) -> (Vec<Diagnostic>, Index, IncludeResolution) {
         let dialect = self.current_dialect().await;
-        let result = analyze_with_dialect(text, dialect);
+        let config = self.current_config().await;
+        let overrides = self.open_buffer_overrides().await;
+        let options = ResolveOptions {
+            base_dir: Self::base_dir_for(uri),
+            library_paths: config.library_paths,
+            max_depth: config.max_include_depth,
+            dialect,
+        };
+        let loader = disk_loader_with_overrides(overrides);
+        let (result, resolution) = analyze_with_includes(text, &options, &loader);
         let diagnostics = result
             .diagnostics
             .into_iter()
             .map(|d| to_lsp_diagnostic(text, d))
             .collect::<Vec<_>>();
-        let index = result.index;
+        (diagnostics, result.index, resolution)
+    }
+
+    async fn analyze_and_store(&self, uri: &Url, text: &str) -> (Vec<Diagnostic>, Index) {
+        let (diagnostics, index, resolution) = self.analyze_document(uri, text).await;
 
         if let Some(doc) = self.documents.write().await.get_mut(uri) {
             doc.index = index.clone();
+            doc.includes = resolution;
         }
 
         (diagnostics, index)
@@ -120,6 +212,7 @@ impl Backend {
         let client = self.client.clone();
         let debounce_tasks = Arc::clone(&self.debounce_tasks);
         let dialect_slot = Arc::clone(&self.dialect);
+        let config_slot = Arc::clone(&self.config);
         let uri_for_task = uri.clone();
 
         let handle = tokio::spawn(async move {
@@ -136,7 +229,34 @@ impl Backend {
             };
 
             let dialect = *dialect_slot.read().await;
-            let result = analyze_with_dialect(&text, dialect);
+            let config = config_slot.read().await.clone();
+
+            let overrides = {
+                let docs = documents.read().await;
+                let mut map = HashMap::new();
+                for (u, doc) in docs.iter() {
+                    if let Ok(path) = u.to_file_path() {
+                        map.insert(path.clone(), doc.text.clone());
+                        if let Ok(canon) = path.canonicalize() {
+                            map.insert(canon, doc.text.clone());
+                        }
+                    }
+                }
+                map
+            };
+
+            let options = ResolveOptions {
+                base_dir: uri_for_task
+                    .to_file_path()
+                    .ok()
+                    .and_then(|p| p.parent().map(Path::to_path_buf))
+                    .unwrap_or_else(|| PathBuf::from(".")),
+                library_paths: config.library_paths,
+                max_depth: config.max_include_depth,
+                dialect,
+            };
+            let loader = disk_loader_with_overrides(overrides);
+            let (result, resolution) = analyze_with_includes(&text, &options, &loader);
             let diagnostics = result
                 .diagnostics
                 .into_iter()
@@ -151,6 +271,7 @@ impl Backend {
                         return;
                     }
                     doc.index = index;
+                    doc.includes = resolution;
                 } else {
                     return;
                 }
@@ -198,12 +319,13 @@ impl Backend {
             return;
         };
 
-        let dialect = self.current_dialect().await;
-        let result = analyze_with_dialect(&text, dialect);
+        let (diagnostics, index, resolution) = self.analyze_document(uri, &text).await;
+        let _ = diagnostics;
         let mut docs = self.documents.write().await;
         if let Some(doc) = docs.get_mut(uri) {
             if doc.version == version && doc.text == text {
-                doc.index = result.index;
+                doc.index = index;
+                doc.includes = resolution;
             }
         }
     }
@@ -214,6 +336,25 @@ impl LanguageServer for Backend {
     async fn initialize(&self, params: InitializeParams) -> Result<InitializeResult> {
         let dialect = Self::dialect_from_init(&params);
         self.set_dialect(dialect).await;
+
+        if let Some(Value::Object(map)) = &params.initialization_options {
+            let mut config = WorkspaceConfig::default();
+            if let Some(Value::Array(paths)) = map.get("libraryPaths") {
+                config.library_paths = paths
+                    .iter()
+                    .filter_map(|v| v.as_str())
+                    .map(PathBuf::from)
+                    .collect();
+            }
+            if let Some(depth) = map
+                .get("include")
+                .and_then(|i| i.get("maxDepth"))
+                .and_then(Value::as_u64)
+            {
+                config.max_include_depth = depth as usize;
+            }
+            self.set_config(config).await;
+        }
 
         Ok(InitializeResult {
             capabilities: ServerCapabilities {
@@ -256,7 +397,12 @@ impl LanguageServer for Backend {
     }
 
     async fn did_change_configuration(&self, params: DidChangeConfigurationParams) {
-        if let Some(dialect) = Self::dialect_from_config(&params.settings) {
+        let Some((dialect_opt, config)) = Self::config_from_settings(&params.settings) else {
+            return;
+        };
+
+        let mut reanalyze = false;
+        if let Some(dialect) = dialect_opt {
             let previous = self.current_dialect().await;
             if dialect != previous {
                 self.set_dialect(dialect).await;
@@ -266,8 +412,22 @@ impl LanguageServer for Backend {
                         format!("dialect changed: {} → {}", previous.id(), dialect.id()),
                     )
                     .await;
-                self.reanalyze_all().await;
+                reanalyze = true;
             }
+        }
+
+        {
+            let previous = self.current_config().await;
+            if previous.library_paths != config.library_paths
+                || previous.max_include_depth != config.max_include_depth
+            {
+                self.set_config(config).await;
+                reanalyze = true;
+            }
+        }
+
+        if reanalyze {
+            self.reanalyze_all().await;
         }
     }
 
@@ -284,6 +444,7 @@ impl LanguageServer for Backend {
                     text: text.clone(),
                     version,
                     index: Index::default(),
+                    includes: IncludeResolution::default(),
                 },
             );
         }
@@ -316,6 +477,11 @@ impl LanguageServer for Backend {
         self.client.publish_diagnostics(uri, Vec::new(), None).await;
     }
 
+    async fn did_change_watched_files(&self, _params: DidChangeWatchedFilesParams) {
+        // Included / library files may have changed on disk — refresh all open buffers.
+        self.reanalyze_all().await;
+    }
+
     async fn document_symbol(
         &self,
         params: DocumentSymbolParams,
@@ -345,7 +511,13 @@ impl LanguageServer for Backend {
             &doc.text,
             params.text_document_position_params.position,
         );
-        let location = definition_location(uri, &doc.text, &doc.index, offset);
+        let location = definition_location_with_includes(
+            uri,
+            &doc.text,
+            &doc.index,
+            offset,
+            Some(&doc.includes),
+        );
 
         Ok(location.map(GotoDefinitionResponse::Scalar))
     }
@@ -408,6 +580,21 @@ impl LanguageServer for Backend {
             }
         }
 
+        // 3) included / library definition detail
+        if let Some(symbol) = doc.index.symbol_at_offset(offset) {
+            if let Some((file, kind, span)) = doc.includes.find_model_or_subckt(&symbol.name) {
+                if let Some(external) = included_hover(&file.text, kind, &symbol.name, span) {
+                    return Ok(Some(Hover {
+                        contents: HoverContents::Markup(MarkupContent {
+                            kind: MarkupKind::Markdown,
+                            value: external,
+                        }),
+                        range: Some(span_to_range(&doc.text, token.span)),
+                    }));
+                }
+            }
+        }
+
         Ok(None)
     }
 }
@@ -441,6 +628,32 @@ fn file_local_hover(source: &str, symbol: &spice_parser::Symbol) -> Option<Strin
     }
 }
 
+fn included_hover(
+    source: &str,
+    kind: spice_parser::SymbolKind,
+    name: &str,
+    span: spice_parser::Span,
+) -> Option<String> {
+    use spice_parser::SymbolKind;
+    let line = line_containing(source, span.start)?;
+    match kind {
+        SymbolKind::Subckt => {
+            let ports = subckt_ports(line);
+            Some(format!(
+                "**`.subckt {}`** (included)\n\nPorts: `{}`",
+                name,
+                ports.join(", ")
+            ))
+        }
+        SymbolKind::Model => Some(format!(
+            "**`.model {}`** (included)\n\n```\n{}\n```",
+            name,
+            line.trim()
+        )),
+        _ => None,
+    }
+}
+
 fn line_containing(source: &str, offset: usize) -> Option<&str> {
     let offset = offset.min(source.len());
     let start = source[..offset].rfind('\n').map(|i| i + 1).unwrap_or(0);
@@ -465,6 +678,7 @@ fn subckt_ports(line: &str) -> Vec<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use spice_parser::analyze_with_dialect;
     use std::path::PathBuf;
 
     fn fixture(name: &str) -> String {
@@ -487,5 +701,28 @@ mod tests {
         let ng = analyze_with_dialect(&source, Dialect::Ngspice);
         let hs = analyze_with_dialect(&source, Dialect::Hspice);
         assert_eq!(ng.diagnostics.len(), hs.diagnostics.len());
+    }
+
+    #[test]
+    fn include_fixture_has_no_unknown_model() {
+        let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../../test-data/valid/with-include");
+        let source = std::fs::read_to_string(dir.join("top.cir")).unwrap();
+        let options = ResolveOptions {
+            base_dir: dir,
+            library_paths: Vec::new(),
+            max_depth: 8,
+            dialect: Dialect::Hspice,
+        };
+        let loader = disk_loader_with_overrides(HashMap::new());
+        let (result, _) = analyze_with_includes(&source, &options, &loader);
+        assert!(
+            !result
+                .diagnostics
+                .iter()
+                .any(|d| d.code.as_deref() == Some("spice/unknown-model")),
+            "{:?}",
+            result.diagnostics
+        );
     }
 }

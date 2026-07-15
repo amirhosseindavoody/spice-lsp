@@ -1,4 +1,4 @@
-use spice_parser::{DocumentSymbolEntry, Index, Span, SymbolKind};
+use spice_parser::{DocumentSymbolEntry, IncludeResolution, Index, Span, SymbolKind};
 use tower_lsp::lsp_types::{
     Diagnostic, DiagnosticSeverity, DocumentSymbol, Location, NumberOrString, Position, Range,
     SymbolKind as LspSymbolKind, Url,
@@ -74,10 +74,35 @@ pub fn location(uri: &Url, source: &str, span: Span) -> Location {
     }
 }
 
-pub fn definition_location(uri: &Url, source: &str, index: &Index, offset: usize) -> Option<Location> {
+pub fn definition_location_with_includes(
+    uri: &Url,
+    source: &str,
+    index: &Index,
+    offset: usize,
+    resolution: Option<&IncludeResolution>,
+) -> Option<Location> {
     let symbol = index.symbol_at_offset(offset)?;
+
+    if let Some(span) = local_definition_span(index, symbol.kind, &symbol.name) {
+        return Some(location(uri, source, span));
+    }
+
+    if let Some(resolution) = resolution {
+        if matches!(symbol.kind, SymbolKind::Model | SymbolKind::Subckt) {
+            if let Some((file, _, span)) = resolution.find_model_or_subckt(&symbol.name) {
+                let file_uri = path_to_url(&file.path)?;
+                return Some(location(&file_uri, &file.text, span));
+            }
+        }
+    }
+
+    // Fallback: previous same-file behavior (reference span).
     let span = resolve_definition_span(index, symbol.kind, &symbol.name)?;
     Some(location(uri, source, span))
+}
+
+fn path_to_url(path: &std::path::Path) -> Option<Url> {
+    Url::from_file_path(path).ok()
 }
 
 pub fn reference_locations(
@@ -120,16 +145,18 @@ fn reference_kinds(kind: SymbolKind) -> &'static [SymbolKind] {
     }
 }
 
+fn local_definition_span(index: &Index, kind: SymbolKind, name: &str) -> Option<Span> {
+    index.definition_span(kind, name).or_else(|| {
+        if kind == SymbolKind::Model {
+            index.definition_span(SymbolKind::Subckt, name)
+        } else {
+            None
+        }
+    })
+}
+
 fn resolve_definition_span(index: &Index, kind: SymbolKind, name: &str) -> Option<Span> {
-    index
-        .definition_span(kind, name)
-        .or_else(|| {
-            if kind == SymbolKind::Model {
-                index.definition_span(SymbolKind::Subckt, name)
-            } else {
-                None
-            }
-        })
+    local_definition_span(index, kind, name)
         .or_else(|| index.reference_spans(kind, name).first().copied())
 }
 
@@ -216,5 +243,35 @@ mod tests {
         assert!(with_decl.len() >= 2);
         assert_eq!(without_decl.len(), with_decl.len() - 1);
         assert!(without_decl.iter().all(|loc| loc.range.start.line != 1));
+    }
+
+    #[test]
+    fn definition_jumps_into_include_file() {
+        let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../../test-data/valid/with-include");
+        let source = std::fs::read_to_string(dir.join("top.cir")).unwrap();
+        let options = spice_parser::ResolveOptions {
+            base_dir: dir.clone(),
+            library_paths: Vec::new(),
+            max_depth: 8,
+            dialect: spice_parser::Dialect::Hspice,
+        };
+        let loader = spice_parser::disk_loader_with_overrides(Default::default());
+        let (result, resolution) =
+            spice_parser::analyze_with_includes(&source, &options, &loader);
+
+        let uri = Url::from_file_path(dir.join("top.cir")).unwrap();
+        // Cursor on `nch` in `M1 d g s b nch`
+        let offset = source.find("nch").expect("nch ref");
+        let loc = definition_location_with_includes(
+            &uri,
+            &source,
+            &result.index,
+            offset,
+            Some(&resolution),
+        )
+        .expect("definition");
+
+        assert!(loc.uri.path().ends_with("models.inc"));
     }
 }

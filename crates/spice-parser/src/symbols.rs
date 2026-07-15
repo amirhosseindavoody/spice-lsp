@@ -49,6 +49,16 @@ impl Index {
         self.definitions.get(&key).and_then(|v| v.first().copied())
     }
 
+    pub fn has_definition(&self, kind: SymbolKind, name: &str) -> bool {
+        self.definition_span(kind, name).is_some()
+    }
+
+    /// Whether `name` is defined as a model or subcircuit (case-insensitive).
+    pub fn has_model_or_subckt(&self, name: &str) -> bool {
+        self.has_definition(SymbolKind::Model, name)
+            || self.has_definition(SymbolKind::Subckt, name)
+    }
+
     pub fn reference_spans(&self, kind: SymbolKind, name: &str) -> &[Span] {
         static EMPTY: [Span; 0] = [];
         let key = (kind, name.to_ascii_lowercase());
@@ -62,6 +72,13 @@ impl Index {
         self.symbols.iter().find(|s| {
             offset >= s.name_span.start && offset <= s.name_span.end
         })
+    }
+
+    /// All definition keys `(kind, lowercase name)` present in this index.
+    pub fn definition_names(&self) -> impl Iterator<Item = (SymbolKind, &str)> + '_ {
+        self.definitions
+            .keys()
+            .map(|(kind, name)| (*kind, name.as_str()))
     }
 
     pub(crate) fn add_definition(&mut self, kind: SymbolKind, name: String, span: Span) {
@@ -210,20 +227,14 @@ pub fn build_index(_source: &str, lines: &[(Span, LineKind)]) -> (Index, Vec<Dia
                         line_span: *line_span,
                         scope: scope.clone(),
                     });
-
-                    if index.definition_span(SymbolKind::Model, model_name).is_none()
-                        && index.definition_span(SymbolKind::Subckt, model_name).is_none()
-                    {
-                        diagnostics.push(Diagnostic {
-                            message: format!("'{model_name}' is not defined as a model or subcircuit"),
-                            severity: Severity::Warning,
-                            span: *model_span,
-                            code: Some("spice/unknown-model".into()),
-                        });
-                    }
+                    // Defer unknown-model until the full file (and includes) are indexed.
                 }
             }
-            LineKind::Other => {}
+            LineKind::Include { .. }
+            | LineKind::LibCall { .. }
+            | LineKind::LibSection { .. }
+            | LineKind::Endl { .. }
+            | LineKind::Other => {}
         }
     }
 
@@ -256,7 +267,54 @@ pub fn build_index(_source: &str, lines: &[(Span, LineKind)]) -> (Index, Vec<Dia
         }
     }
 
+    diagnostics.extend(unknown_model_diagnostics(&index));
+
     (index, diagnostics)
+}
+
+/// Emit `spice/unknown-model` for model/subckt references with no local definition.
+///
+/// Callers that merge include/lib definitions should filter these afterward.
+pub fn unknown_model_diagnostics(index: &Index) -> Vec<Diagnostic> {
+    let mut diagnostics = Vec::new();
+    let mut seen = HashMap::<String, Span>::new();
+
+    for symbol in &index.symbols {
+        if symbol.kind != SymbolKind::Model {
+            continue;
+        }
+        // Model-kind symbols that are also definitions are not references.
+        if index
+            .definition_span(SymbolKind::Model, &symbol.name)
+            .is_some_and(|span| span == symbol.name_span)
+        {
+            continue;
+        }
+        let key = symbol.name.to_ascii_lowercase();
+        seen.entry(key).or_insert(symbol.name_span);
+    }
+
+    for (name_lc, span) in seen {
+        let display = index
+            .symbols
+            .iter()
+            .find(|s| s.kind == SymbolKind::Model && s.name.eq_ignore_ascii_case(&name_lc))
+            .map(|s| s.name.clone())
+            .unwrap_or(name_lc.clone());
+
+        if index.definition_span(SymbolKind::Model, &display).is_none()
+            && index.definition_span(SymbolKind::Subckt, &display).is_none()
+        {
+            diagnostics.push(Diagnostic {
+                message: format!("'{display}' is not defined as a model or subcircuit"),
+                severity: Severity::Warning,
+                span,
+                code: Some("spice/unknown-model".into()),
+            });
+        }
+    }
+
+    diagnostics
 }
 
 fn current_scope(scope_stack: &[(String, Span)]) -> String {
@@ -290,6 +348,19 @@ pub enum LineKind {
         name_span: Span,
         model_ref: Option<(String, Span)>,
     },
+    /// `.include` / `.inc` path
+    Include { path: String, path_span: Span },
+    /// `.lib 'file' entry` — load a named section from a library file
+    LibCall {
+        path: String,
+        path_span: Span,
+        entry: String,
+        entry_span: Span,
+    },
+    /// `.lib entry` section header inside a library file
+    LibSection { name: String, name_span: Span },
+    /// `.endl` / `.endl entry`
+    Endl { name: Option<String> },
     Other,
 }
 
@@ -337,8 +408,132 @@ fn classify_directive(source: &str, line_span: Span, text: &str) -> LineKind {
                 name_span,
             })
         }
+        "include" | "inc" => classify_include(source, line_span, text, &mut parts),
+        "lib" => classify_lib(source, line_span, text, &mut parts),
+        "endl" => {
+            let name = parts.next().map(|s| unquote(s).to_string());
+            LineKind::Endl { name }
+        }
         _ => LineKind::Other,
     }
+}
+
+fn classify_include<'a>(
+    source: &str,
+    line_span: Span,
+    text: &str,
+    parts: &mut impl Iterator<Item = &'a str>,
+) -> LineKind {
+    let Some(raw) = parts.next() else {
+        return LineKind::Other;
+    };
+    let path = unquote(raw).to_string();
+    if path.is_empty() {
+        return LineKind::Other;
+    }
+    let path_span = path_token_span(source, line_span, text, raw);
+    LineKind::Include { path, path_span }
+}
+
+fn classify_lib<'a>(
+    source: &str,
+    line_span: Span,
+    text: &str,
+    parts: &mut impl Iterator<Item = &'a str>,
+) -> LineKind {
+    let Some(first) = parts.next() else {
+        return LineKind::Other;
+    };
+    let second = parts.next();
+
+    match second {
+        Some(entry_raw) if looks_like_path(first) || second_is_lib_entry(first, entry_raw) => {
+            let path = unquote(first).to_string();
+            let entry = unquote(entry_raw).to_string();
+            if path.is_empty() || entry.is_empty() {
+                return LineKind::Other;
+            }
+            LineKind::LibCall {
+                path,
+                path_span: path_token_span(source, line_span, text, first),
+                entry: entry.clone(),
+                entry_span: path_token_span(source, line_span, text, entry_raw),
+            }
+        }
+        None => {
+            let name = unquote(first).to_string();
+            if name.is_empty() {
+                return LineKind::Other;
+            }
+            // `.lib entry` section header (or bare `.lib file` treated as include of whole file)
+            if looks_like_path(first) && unquote(first).contains(['/', '\\', '.']) {
+                let path = unquote(first).to_string();
+                LineKind::Include {
+                    path,
+                    path_span: path_token_span(source, line_span, text, first),
+                }
+            } else {
+                LineKind::LibSection {
+                    name: name.clone(),
+                    name_span: path_token_span(source, line_span, text, first),
+                }
+            }
+        }
+        Some(_) => {
+            // Ambiguous two-arg form without path-like first token: treat as section name only.
+            let name = unquote(first).to_string();
+            LineKind::LibSection {
+                name: name.clone(),
+                name_span: path_token_span(source, line_span, text, first),
+            }
+        }
+    }
+}
+
+fn second_is_lib_entry(first: &str, _entry: &str) -> bool {
+    // HSPICE calls always pass a filename then entry; quoted first token is a path.
+    is_quoted(first) || looks_like_path(first)
+}
+
+fn is_quoted(token: &str) -> bool {
+    (token.starts_with('\'') && token.ends_with('\''))
+        || (token.starts_with('"') && token.ends_with('"'))
+}
+
+fn looks_like_path(token: &str) -> bool {
+    let bare = unquote(token);
+    is_quoted(token)
+        || bare.contains('/')
+        || bare.contains('\\')
+        || bare.contains('.')
+        || std::path::Path::new(bare).is_absolute()
+}
+
+fn unquote(token: &str) -> &str {
+    if token.len() >= 2
+        && ((token.starts_with('\'') && token.ends_with('\''))
+            || (token.starts_with('"') && token.ends_with('"')))
+    {
+        &token[1..token.len() - 1]
+    } else {
+        token
+    }
+}
+
+fn path_token_span(source: &str, line_span: Span, line_text: &str, token: &str) -> Span {
+    let needle = unquote(token);
+    if needle.is_empty() {
+        return subspan(source, line_span, line_text, token);
+    }
+    // Prefer the bare path inside quotes when present.
+    if let Some(pos) = line_text.find(needle) {
+        let start = line_span.start + pos;
+        return Span {
+            start,
+            end: start + needle.len(),
+        };
+    }
+    subspan(source, line_span, line_text, token)
 }
 
 fn classify_instance(source: &str, line_span: Span, text: &str) -> LineKind {

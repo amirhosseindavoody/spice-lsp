@@ -110,7 +110,7 @@ pixi run cargo build --release -p spice-lsp
 # artifact: target/release/spice-lsp
 ```
 
-Cross-compile with `cross` or platform matrix in CI. The [Release VS Code extension](../../.github/workflows/release-vscode.yml) workflow runs on every push to `main`: it patch-bumps the extension version, builds all platform binaries, packages a bundled `.vsix`, creates a GitHub Release, and publishes to the VS Code Marketplace (requires `VSCE_PAT`). See [VS Code integration](4_vscode-integration.md).
+Cross-compile with `cross` or platform matrix in CI. The [Release VS Code extension](../../.github/workflows/release-vscode.yml) workflow runs on every push to `main`: it patch-bumps the extension version, builds all platform binaries, packages a bundled `.vsix`, creates a GitHub Release, and publishes to the VS Code Marketplace (requires `VSCE_PAT`). See [VS Code integration](3_vscode-integration.md).
 
 ## Documentation site
 
@@ -164,5 +164,5 @@ Trigger a manual deploy from the Actions tab via **workflow_dispatch** if needed
 ## Related
 
 - [Getting started](../2_getting-started.md)
-- [MVP guide](2_mvp.md)
-- [Demo and testing](3_demo-and-test.md)
+- [Demo and testing](2_demo-and-test.md)
+- [VS Code integration](3_vscode-integration.md)

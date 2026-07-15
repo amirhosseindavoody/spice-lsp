@@ -49,7 +49,9 @@
           ".sp",
           ".spf",
           ".net",
-          ".ckt"
+          ".ckt",
+          ".inc",
+          ".lib"
         ],
         "configuration": "./language-configuration.json"
       }
@@ -88,6 +90,20 @@
           ],
           "default": "hspice",
           "description": "Active SPICE dialect. Selects reference documentation for hover and future dialect-specific diagnostics. Default is HSPICE."
+        },
+        "spiceLsp.libraryPaths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "Extra directories searched when resolving .include / .inc / .lib paths (after the including file's directory)."
+        },
+        "spiceLsp.include.maxDepth": {
+          "type": "number",
+          "default": 16,
+          "minimum": 1,
+          "description": "Maximum nesting depth when following .include / .lib chains."
         }
       }
     },

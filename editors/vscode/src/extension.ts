@@ -164,6 +164,8 @@ function createClient(): LanguageClient {
   }
 
   const dialect = currentDialectId();
+  const libraryPaths = config.get<string[]>("libraryPaths") ?? [];
+  const maxDepth = config.get<number>("include.maxDepth") ?? 16;
   log(`Starting language server: ${serverPath} (dialect=${dialect})`);
 
   const serverOptions: ServerOptions = {
@@ -177,11 +179,13 @@ function createClient(): LanguageClient {
     synchronize: {
       configurationSection: "spiceLsp",
       fileEvents: vscode.workspace.createFileSystemWatcher(
-        "**/*.{cir,sp,spf,net,ckt}",
+        "**/*.{cir,sp,spf,net,ckt,inc,lib}",
       ),
     },
     initializationOptions: {
       dialect,
+      libraryPaths,
+      include: { maxDepth },
     },
     outputChannel: output,
   };
@@ -357,7 +361,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       if (
         event.affectsConfiguration("spiceLsp.serverPath") ||
         event.affectsConfiguration("spiceLsp.trace.server") ||
-        event.affectsConfiguration("spiceLsp.dialect")
+        event.affectsConfiguration("spiceLsp.dialect") ||
+        event.affectsConfiguration("spiceLsp.libraryPaths") ||
+        event.affectsConfiguration("spiceLsp.include.maxDepth")
       ) {
         try {
           await restartClient();

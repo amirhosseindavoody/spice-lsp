@@ -1,6 +1,6 @@
 # Introduction
 
-**Last verified against:** v0.3 — multi-dialect setting (default HSPICE), expanded HSPICE reference corpus, bare `.DATA` value rows parse without syntax errors, dialect-aware hover, generated mdBook dialect catalog; VS Code commands register before LSP start; Linux glibc 2.31+ binaries; Marketplace publish on each push to `main`
+**Last verified against:** include/lib resolution — `.include` / `.inc` and HSPICE `.lib 'file' entry` resolve `.model` / `.subckt` for diagnostics and go-to-definition; `spiceLsp.libraryPaths`; multi-dialect hover corpus (default HSPICE); VS Code associations for `.inc` / `.lib`
 
 spice-lsp is a language server and formatter for SPICE circuit simulation netlists. The **end goal** is a VS Code extension that provides real-time diagnostics, dialect-aware documentation on hover, navigation, formatting, and connectivity warnings while editing `.cir`, `.sp`, `.spf`, and related files.
 
@@ -10,10 +10,10 @@ This book is generated with [mdBook](https://rust-lang.github.io/mdBook/) from t
 
 | Stage | Chapters |
 |-------|----------|
-| **Setup and ship MVP** | [Getting Started](2_getting-started.md) → [Principles](3_principles.md) → [MVP Guide](development/2_mvp.md) → [Demo and Testing](development/3_demo-and-test.md) |
+| **Setup** | [Getting Started](2_getting-started.md) → [Principles](3_principles.md) → [Demo and Testing](development/2_demo-and-test.md) |
 | **Understand the system** | [Architecture](4_architecture.md) → [LSP Features](5_lsp-features.md) |
-| **Long-term direction** | [Dialect Reference and Net Semantics](8_dialect-reference-and-semantics.md) → [Dialect reference catalog](reference/README.md) → [Formatter](6_formatter.md) → [Limitations](7_limitations.md) |
-| **VS Code** | [VS Code Integration](development/4_vscode-integration.md) |
+| **Long-term direction** | [Dialect Reference and Net Semantics](8_dialect-reference-and-semantics.md) → [Dialect reference catalog](reference/README.md) → [Formatter](6_formatter.md) → [Limitations](7_limitations.md) → [Include and Library Resolution](9_include-and-lib-resolution.md) |
+| **VS Code** | [VS Code Integration](development/3_vscode-integration.md) |
 
 Quick setup lives in the repository [README.md](../README.md).
 

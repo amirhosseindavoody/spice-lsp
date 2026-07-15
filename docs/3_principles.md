@@ -69,6 +69,6 @@ Ship MVP first, then follow the phase order in [Architecture](4_architecture.md)
 1. `pixi run test` passes parser and LSP integration tests
 2. Invalid netlist in the Extension Development Host shows a syntax diagnostic
 3. Fixing the error clears the diagnostic without restarting the editor
-4. A contributor can follow [MVP guide](development/2_mvp.md) and reproduce the demo
+4. A contributor can follow [Demo and testing](development/2_demo-and-test.md) and reproduce the smoke demo
 
 Success criteria for **v0.5** (future): hover on `.tran` shows Ngspice reference text; `test-data/semantic/dangling-node.cir` produces `spice/dangling-node`.
