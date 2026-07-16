@@ -16,8 +16,8 @@ pub use diagnostic::{Diagnostic, Severity, Span};
 pub use hover_token::{hover_token_at, HoverKind, HoverToken};
 pub use includes::{
     analyze_with_includes, collect_include_refs, disk_loader_with_overrides, filter_unknown_models,
-    resolve_include_path, resolve_includes, IncludeRef, IncludeResolution, IncludedFile,
-    ResolveOptions, DEFAULT_MAX_INCLUDE_DEPTH,
+    find_lib_section_span, resolve_include_path, resolve_includes, IncludeRef, IncludeResolution,
+    IncludedFile, ResolvedInclude, ResolveOptions, DEFAULT_MAX_INCLUDE_DEPTH,
 };
 pub use symbols::{
     build_index, classify_line, unknown_model_diagnostics, DocumentSymbolEntry, Index, LineKind,

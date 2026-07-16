@@ -47,6 +47,6 @@ Details on reference hover and connectivity: [Dialect reference and net semantic
 
 1. `pixi run test` passes parser and LSP integration tests
 2. Invalid netlist in the editor shows a syntax diagnostic; fixing it clears the diagnostic without restart
-3. Go to definition reaches `.model` / `.subckt` across `.include` / `.lib` when paths resolve
+3. Go to definition reaches `.model` / `.subckt` across `.include` / `.lib` when paths resolve, and jumps from include/lib paths (and `.lib` entry names) into the target file or section
 4. Hover on a documented directive shows dialect reference text for the active dialect
 5. A contributor can follow [Demo and testing](development/2_demo-and-test.md) and reproduce the smoke demo

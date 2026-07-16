@@ -479,6 +479,79 @@ async fn goto_definition_follows_include_file() {
 }
 
 #[tokio::test]
+async fn goto_definition_on_lib_path_and_entry() {
+    let dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../../test-data/valid/with-include");
+    let top_path = dir.join("top-lib.cir");
+    let uri = url::Url::from_file_path(&top_path).expect("top-lib uri");
+    let source = std::fs::read_to_string(&top_path).expect("top-lib.cir");
+
+    let mut server = LspProcess::spawn().await;
+    handshake_with_dialect(&mut server, "hspice").await;
+    server
+        .send(json!({
+            "jsonrpc": "2.0",
+            "method": "textDocument/didOpen",
+            "params": {
+                "textDocument": {
+                    "uri": uri.as_str(),
+                    "languageId": "spice",
+                    "version": 1,
+                    "text": source
+                }
+            }
+        }))
+        .await;
+    let _ = server
+        .read_notification("textDocument/publishDiagnostics")
+        .await;
+
+    let path_offset = source.find("corners.lib").expect("lib path");
+    let (line, character) = byte_offset_to_line_col(&source, path_offset);
+    server
+        .send(json!({
+            "jsonrpc": "2.0",
+            "id": 32,
+            "method": "textDocument/definition",
+            "params": {
+                "textDocument": { "uri": uri.as_str() },
+                "position": { "line": line, "character": character }
+            }
+        }))
+        .await;
+    let path_response = server.read_response(32).await;
+    let path_uri = path_response["result"]["uri"].as_str().expect("uri");
+    assert!(
+        path_uri.ends_with("corners.lib"),
+        "expected corners.lib, got {path_uri}"
+    );
+    assert_eq!(path_response["result"]["range"]["start"]["line"], 0);
+
+    let entry_offset = source.find(" TT").expect("entry") + 1;
+    let (line, character) = byte_offset_to_line_col(&source, entry_offset);
+    server
+        .send(json!({
+            "jsonrpc": "2.0",
+            "id": 33,
+            "method": "textDocument/definition",
+            "params": {
+                "textDocument": { "uri": uri.as_str() },
+                "position": { "line": line, "character": character }
+            }
+        }))
+        .await;
+    let entry_response = server.read_response(33).await;
+    let entry_uri = entry_response["result"]["uri"].as_str().expect("uri");
+    assert!(
+        entry_uri.ends_with("corners.lib"),
+        "expected corners.lib, got {entry_uri}"
+    );
+    // corners.lib: line 0 comment, line 1 `.lib TT`
+    assert_eq!(entry_response["result"]["range"]["start"]["line"], 1);
+    server.shutdown().await;
+}
+
+#[tokio::test]
 async fn references_on_subckt_definition() {
     let uri = "file:///test/subckt.cir";
     let source = fixture("valid/subckt.cir");
