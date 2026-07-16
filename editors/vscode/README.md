@@ -17,7 +17,7 @@ If nothing happens after opening a file, check **Output → SPICE Language Serve
 
 To switch dialect, use **SPICE LSP: Set Dialect…** (or the status-bar dialect chip). Requires extension **0.2.10+**. If VS Code says the command is not registered, update/reload the extension.
 
-To scaffold sample netlists, run **SPICE LSP: Create Demo Folder**. It writes `spice-lsp-demo/` under your opened workspace folder (`same-file.sp` for in-file jumps; `top.sp` + `models.sp` for `.include` cross-file jumps).
+To scaffold sample netlists, run **SPICE LSP: Create Demo Folder**. It copies HSPICE `.sp` / `.lib` samples into `spice-lsp-demo/` under your opened workspace (`same-file.sp` for in-file jumps; `top.sp` + `models.sp` for `.include`; `top-lib.sp` + `corners.lib` for HSPICE `.lib`) and sets the dialect to HSPICE.
 
 ## Features
 

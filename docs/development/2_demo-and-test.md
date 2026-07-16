@@ -220,7 +220,7 @@ Use this script in reviews:
 | 3 | Open invalid netlist | Red squiggle + Problems entry |
 | 4 | Edit to fix | Diagnostic disappears |
 | 5 | Open valid netlist | No errors |
-| 6 | **SPICE LSP: Create Demo Folder** | `spice-lsp-demo/` appears; F12 on `nch` in `top.sp` opens `models.sp` |
+| 6 | **SPICE LSP: Create Demo Folder** | `spice-lsp-demo/` appears (HSPICE); F12 on `nch` in `top.sp` opens `models.sp`; F12 on `nch_tt` in `top-lib.sp` opens `corners.lib` |
 | 7 | **SPICE LSP: Restart Server** (if needed) | Server reconnects, diagnostics return |
 
 ---

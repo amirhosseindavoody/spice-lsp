@@ -8,7 +8,7 @@ import {
   Trace,
   TransportKind,
 } from "vscode-languageclient/node";
-import { DEMO_FILES, DEMO_FOLDER_NAME } from "./demoContent";
+import { DEMO_FILE_NAMES, DEMO_FOLDER_NAME } from "./demoContent";
 
 let client: LanguageClient | undefined;
 let extensionPath = "";
@@ -324,6 +324,13 @@ async function createDemoFolder(): Promise<void> {
     return;
   }
 
+  const demoSourceDir = path.join(extensionPath, "demo");
+  if (!fs.existsSync(demoSourceDir)) {
+    throw new Error(
+      `Demo templates not found at ${demoSourceDir}. Reinstall the extension.`,
+    );
+  }
+
   const demoUri = vscode.Uri.joinPath(parent, DEMO_FOLDER_NAME);
   let demoExists = false;
   try {
@@ -351,15 +358,29 @@ async function createDemoFolder(): Promise<void> {
     await vscode.workspace.fs.createDirectory(demoUri);
   }
 
-  for (const file of DEMO_FILES) {
-    const fileUri = vscode.Uri.joinPath(demoUri, file.relativePath);
-    await vscode.workspace.fs.writeFile(fileUri, Buffer.from(file.contents, "utf8"));
+  for (const name of DEMO_FILE_NAMES) {
+    const src = path.join(demoSourceDir, name);
+    if (!fs.existsSync(src)) {
+      throw new Error(`Missing demo template: ${src}`);
+    }
+    const contents = await fs.promises.readFile(src);
+    const fileUri = vscode.Uri.joinPath(demoUri, name);
+    await vscode.workspace.fs.writeFile(fileUri, contents);
   }
 
-  log(`Wrote demo folder at ${demoUri.fsPath}`);
+  // Demo netlists use HSPICE (.include / .lib / .option / .param).
+  const configTarget = vscode.workspace.workspaceFolders?.length
+    ? vscode.ConfigurationTarget.Workspace
+    : vscode.ConfigurationTarget.Global;
+  await vscode.workspace
+    .getConfiguration("spiceLsp")
+    .update("dialect", "hspice", configTarget);
+  updateDialectStatus();
+
+  log(`Wrote demo folder at ${demoUri.fsPath} (dialect=hspice)`);
   await openDemoEntry(demoUri);
   void vscode.window.showInformationMessage(
-    `Created ${DEMO_FOLDER_NAME}. Open same-file.sp or top.sp and press F12 on model/subckt names.`,
+    `Created ${DEMO_FOLDER_NAME} (HSPICE). Open top.sp or same-file.sp and press F12 on model/subckt names.`,
   );
 }
 

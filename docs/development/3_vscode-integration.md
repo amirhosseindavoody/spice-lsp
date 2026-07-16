@@ -33,8 +33,10 @@ editors/vscode/
 │   └── tasks.json           # compile before launch
 ├── package.json
 ├── tsconfig.json
+├── demo/                    # HSPICE samples copied by Create Demo Folder
 ├── src/
-│   └── extension.ts
+│   ├── extension.ts
+│   └── demoContent.ts
 ├── language-configuration.json
 └── README.md                # Marketplace-facing extension readme
 ```
@@ -144,16 +146,18 @@ export async function deactivate() {
 
 ### Create Demo Folder
 
-**SPICE LSP: Create Demo Folder** writes a `spice-lsp-demo/` directory into the opened workspace folder (or a folder you pick if none is open). Files:
+**SPICE LSP: Create Demo Folder** copies the templates from `editors/vscode/demo/` into a `spice-lsp-demo/` directory under the opened workspace folder (or a folder you pick if none is open). It also sets `spiceLsp.dialect` to **hspice**.
 
 | File | Purpose |
 |------|---------|
-| `same-file.sp` | `.param`, `.model`, `.subckt` plus instances — **F12** on `buffer` / `nch` stays in-file |
+| `same-file.sp` | HSPICE `.param` / `.option` / `.model` / `.subckt` — **F12** on `buffer` / `nch` stays in-file |
 | `models.sp` | Shared models and subcircuits |
 | `top.sp` | `.include 'models.sp'` — **F12** on `nch` / `inverter` / `buffer` jumps across files |
+| `corners.lib` | HSPICE `.lib` / `.endl` corner sections |
+| `top-lib.sp` | `.lib 'corners.lib' TT` — **F12** on `nch_tt` / `pch_tt` jumps into the library |
 | `README.md` | Short walkthrough |
 
-If the folder already exists, the command offers **Overwrite** or **Open Existing**.
+If the folder already exists, the command offers **Overwrite** or **Open Existing**. Templates live in the extension package under `demo/` so Marketplace installs ship the same samples.
 ## Development workflow
 
 ### One-time setup

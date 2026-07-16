@@ -47,7 +47,7 @@ Press Ctrl+C to stop.
 
 ## Open sample netlists
 
-**In VS Code:** run **SPICE LSP: Create Demo Folder** from the Command Palette. It creates `spice-lsp-demo/` in your opened workspace with `.sp` files for same-file and cross-file go-to-definition.
+**In VS Code:** run **SPICE LSP: Create Demo Folder** from the Command Palette. It creates `spice-lsp-demo/` in your opened workspace with HSPICE `.sp` / `.lib` files for same-file and cross-file go-to-definition (and sets the dialect to HSPICE).
 
 **By hand:** create or copy a minimal netlist for manual testing:
 
