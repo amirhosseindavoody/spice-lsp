@@ -8,6 +8,7 @@ import {
   Trace,
   TransportKind,
 } from "vscode-languageclient/node";
+import { DEMO_FILES, DEMO_FOLDER_NAME } from "./demoContent";
 
 let client: LanguageClient | undefined;
 let extensionPath = "";
@@ -295,6 +296,91 @@ async function setDialect(): Promise<void> {
   void vscode.window.showInformationMessage(`SPICE dialect: ${picked.label}`);
 }
 
+async function resolveDemoParentDir(): Promise<vscode.Uri | undefined> {
+  const folders = vscode.workspace.workspaceFolders;
+  if (folders && folders.length === 1) {
+    return folders[0].uri;
+  }
+  if (folders && folders.length > 1) {
+    const picked = await vscode.window.showWorkspaceFolderPick({
+      placeHolder: "Select the folder where spice-lsp-demo will be created",
+    });
+    return picked?.uri;
+  }
+
+  const picked = await vscode.window.showOpenDialog({
+    canSelectFiles: false,
+    canSelectFolders: true,
+    canSelectMany: false,
+    openLabel: "Create demo here",
+    title: "Select a folder for spice-lsp-demo",
+  });
+  return picked?.[0];
+}
+
+async function createDemoFolder(): Promise<void> {
+  const parent = await resolveDemoParentDir();
+  if (!parent) {
+    return;
+  }
+
+  const demoUri = vscode.Uri.joinPath(parent, DEMO_FOLDER_NAME);
+  let demoExists = false;
+  try {
+    await vscode.workspace.fs.stat(demoUri);
+    demoExists = true;
+  } catch {
+    demoExists = false;
+  }
+
+  if (demoExists) {
+    const choice = await vscode.window.showWarningMessage(
+      `"${DEMO_FOLDER_NAME}" already exists in ${parent.fsPath}. Overwrite its demo files?`,
+      { modal: true },
+      "Overwrite",
+      "Open Existing",
+    );
+    if (!choice) {
+      return;
+    }
+    if (choice === "Open Existing") {
+      await openDemoEntry(demoUri);
+      return;
+    }
+  } else {
+    await vscode.workspace.fs.createDirectory(demoUri);
+  }
+
+  for (const file of DEMO_FILES) {
+    const fileUri = vscode.Uri.joinPath(demoUri, file.relativePath);
+    await vscode.workspace.fs.writeFile(fileUri, Buffer.from(file.contents, "utf8"));
+  }
+
+  log(`Wrote demo folder at ${demoUri.fsPath}`);
+  await openDemoEntry(demoUri);
+  void vscode.window.showInformationMessage(
+    `Created ${DEMO_FOLDER_NAME}. Open same-file.sp or top.sp and press F12 on model/subckt names.`,
+  );
+}
+
+async function openDemoEntry(demoUri: vscode.Uri): Promise<void> {
+  const readme = vscode.Uri.joinPath(demoUri, "README.md");
+  const top = vscode.Uri.joinPath(demoUri, "top.sp");
+  try {
+    await vscode.window.showTextDocument(top, { preview: false });
+  } catch (error) {
+    log(`Could not open top.sp: ${errorMessage(error)}`);
+  }
+  try {
+    await vscode.window.showTextDocument(readme, {
+      preview: false,
+      viewColumn: vscode.ViewColumn.Beside,
+    });
+  } catch (error) {
+    log(`Could not open demo README: ${errorMessage(error)}`);
+  }
+}
+
 async function startClientInBackground(): Promise<void> {
   try {
     await startClient();
@@ -314,8 +400,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   log(`Activating extension from ${extensionPath} (${getPlatformId()})`);
 
   // Register commands before any await so onCommand activation (Set Dialect /
-  // Restart Server) completes promptly. Awaiting client.start() here made VS Code
-  // report "command not found" when the language server was slow or hung.
+  // Restart Server / Create Demo Folder) completes promptly. Awaiting client.start()
+  // here made VS Code report "command not found" when the language server was slow or hung.
   context.subscriptions.push(
     vscode.commands.registerCommand("spiceLsp.restartServer", async () => {
       log("Restart Server command invoked.");
@@ -335,6 +421,21 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   context.subscriptions.push(
     vscode.commands.registerCommand("spiceLsp.setDialect", async () => {
       await setDialect();
+    }),
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand("spiceLsp.createDemoFolder", async () => {
+      log("Create Demo Folder command invoked.");
+      try {
+        await createDemoFolder();
+      } catch (error) {
+        const message = errorMessage(error);
+        log(`Create demo folder failed: ${message}`);
+        void vscode.window.showErrorMessage(
+          `Failed to create spice-lsp-demo: ${message}`,
+        );
+      }
     }),
   );
 

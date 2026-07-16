@@ -33,7 +33,8 @@
   "activationEvents": [
     "onLanguage:spice",
     "onCommand:spiceLsp.restartServer",
-    "onCommand:spiceLsp.setDialect"
+    "onCommand:spiceLsp.setDialect",
+    "onCommand:spiceLsp.createDemoFolder"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -115,6 +116,10 @@
       {
         "command": "spiceLsp.setDialect",
         "title": "SPICE LSP: Set Dialect…"
+      },
+      {
+        "command": "spiceLsp.createDemoFolder",
+        "title": "SPICE LSP: Create Demo Folder"
       }
     ]
   },
