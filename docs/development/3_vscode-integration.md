@@ -33,8 +33,10 @@ editors/vscode/
 │   └── tasks.json           # compile before launch
 ├── package.json
 ├── tsconfig.json
+├── demo/                    # HSPICE samples copied by Create Demo Folder
 ├── src/
-│   └── extension.ts
+│   ├── extension.ts
+│   └── demoContent.ts
 ├── language-configuration.json
 └── README.md                # Marketplace-facing extension readme
 ```
@@ -46,11 +48,11 @@ Key fields:
 | Field | Purpose |
 |-------|---------|
 | `engines.vscode` | Minimum VS Code version |
-| `activationEvents` | `onLanguage:spice`, `onCommand:spiceLsp.restartServer`, `onCommand:spiceLsp.setDialect` |
+| `activationEvents` | `onLanguage:spice`, `onCommand:spiceLsp.restartServer`, `onCommand:spiceLsp.setDialect`, `onCommand:spiceLsp.createDemoFolder` |
 | `main` | `./out/extension.js` (esbuild bundle) |
 | `contributes.languages` | Register `spice` language id and file extensions |
 | `contributes.configuration` | `spiceLsp.serverPath`, `spiceLsp.trace.server`, `spiceLsp.dialect` |
-| `contributes.commands` | `spiceLsp.restartServer`, `spiceLsp.setDialect` — register first in `activate`; do not await LSP start before returning |
+| `contributes.commands` | `spiceLsp.restartServer`, `spiceLsp.setDialect`, `spiceLsp.createDemoFolder` — register first in `activate`; do not await LSP start before returning |
 
 Example language contribution:
 
@@ -85,7 +87,7 @@ Comment toggle uses `*` (`language-configuration.json` allows only one `lineComm
 
 ## extension.ts
 
-Minimal Language Client setup. Register **both** palette commands **before** any `await`, then start the client in the background. If `activate` awaits a slow/hung `client.start()`, VS Code times out `onCommand` activation and reports `command 'spiceLsp.setDialect' not found` (same for Restart Server):
+Minimal Language Client setup. Register **palette commands** **before** any `await`, then start the client in the background. If `activate` awaits a slow/hung `client.start()`, VS Code times out `onCommand` activation and reports `command 'spiceLsp.setDialect' not found` (same for Restart Server / Create Demo Folder):
 
 ```typescript
 import * as vscode from "vscode";
@@ -126,6 +128,9 @@ export async function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand("spiceLsp.setDialect", async () => {
       /* QuickPick → update spiceLsp.dialect → restart client */
     }),
+    vscode.commands.registerCommand("spiceLsp.createDemoFolder", async () => {
+      /* Write spice-lsp-demo/ with sample .sp netlists under the workspace folder */
+    }),
   );
 
   void startClient(serverPath).catch((error) => {
@@ -139,6 +144,20 @@ export async function deactivate() {
 }
 ```
 
+### Create Demo Folder
+
+**SPICE LSP: Create Demo Folder** copies the templates from `editors/vscode/demo/` into a `spice-lsp-demo/` directory under the opened workspace folder (or a folder you pick if none is open). It also sets `spiceLsp.dialect` to **hspice**.
+
+| File | Purpose |
+|------|---------|
+| `same-file.sp` | HSPICE `.param` / `.option` / `.model` / `.subckt` — **F12** on `buffer` / `nch` stays in-file |
+| `models.sp` | Shared models and subcircuits |
+| `top.sp` | `.include 'models.sp'` — **F12** on `nch` / `inverter` / `buffer` jumps across files |
+| `corners.lib` | HSPICE `.lib` / `.endl` corner sections |
+| `top-lib.sp` | `.lib 'corners.lib' TT` — **F12** on `nch_tt` / `pch_tt` jumps into the library |
+| `README.md` | Short walkthrough |
+
+If the folder already exists, the command offers **Overwrite** or **Open Existing**. Templates live in the extension package under `demo/` so Marketplace installs ship the same samples.
 ## Development workflow
 
 ### One-time setup
@@ -351,7 +370,7 @@ Pre-publish checklist:
 |---------|--------------|-----|
 | Server not starting | Binary not on PATH / wrong `serverPath` / unsupported platform | Set `spiceLsp.serverPath`, then **SPICE LSP: Restart Server**; check Output → SPICE Language Server |
 | `version 'GLIBC_2.3x' not found` | Host glibc older than the binary | Update to a Marketplace build linked for glibc 2.31+, or build locally and set `spiceLsp.serverPath` |
-| `spiceLsp.restartServer` / `spiceLsp.setDialect` not found | Extension never activated, activate hung on LSP start, or Marketplace build predates the command (`setDialect` needs **≥ 0.2.10**) | Update the extension; reload the window; open a `.cir`/`.sp` file or run the command (auto-activates). Prefer builds that register commands before awaiting `client.start()` |
+| `spiceLsp.restartServer` / `spiceLsp.setDialect` / `spiceLsp.createDemoFolder` not found | Extension never activated, activate hung on LSP start, or Marketplace build predates the command (`setDialect` needs **≥ 0.2.10**; Create Demo Folder is newer) | Update the extension; reload the window; open a `.cir`/`.sp` file or run the command (auto-activates). Prefer builds that register commands before awaiting `client.start()` |
 | No **SPICE Language Server** in Output | Extension did not activate | Open a SPICE file or run **SPICE LSP: Restart Server** / **Set Dialect…**; check **Developer: Show Running Extensions** for activation errors |
 | Extension activates with module errors | Unbundled VSIX missing `node_modules` | Use an esbuild-bundled release (`vsce package --no-dependencies` after `npm run compile`) |
 | No diagnostics | Wrong language id | Ensure file extension maps to `spice` |

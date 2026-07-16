@@ -1,0 +1,16 @@
+* corners.lib — HSPICE library sections (used by top-lib.sp)
+
+.lib TT
+.model nch_tt nmos level=1 vto=0.7
+.model pch_tt pmos level=1 vto=-0.7
+.endl TT
+
+.lib FF
+.model nch_ff nmos level=1 vto=0.6
+.model pch_ff pmos level=1 vto=-0.6
+.endl FF
+
+.lib SS
+.model nch_ss nmos level=1 vto=0.8
+.model pch_ss pmos level=1 vto=-0.8
+.endl SS

@@ -9,12 +9,15 @@ Language support for [SPICE](https://en.wikipedia.org/wiki/SPICE) circuit simula
 3. **Watch the Problems panel** (`View → Problems`) for syntax errors and semantic warnings as you type — for example an unclosed `.subckt`, a duplicate instance name, or a reference to an undefined model.
 4. **Use the outline** (`View → Outline`, or Explorer → Outline) to jump between `.subckt`, `.model`, `.param`, and instances.
 5. **Navigate** with **Go to Definition** (`F12`) on a subcircuit or model name — including names defined in `.include` / `.lib` files — and **Find All References** (`Shift+F12`) to list every use in the current buffer.
+6. **Optional:** run **SPICE LSP: Create Demo Folder** from the Command Palette to drop a `spice-lsp-demo/` folder (with `.sp` samples) into your workspace so you can try same-file and cross-file navigation immediately.
 
 That is enough for day-to-day editing. The matching `spice-lsp` binary for your platform is bundled; leave `spiceLsp.serverPath` empty unless you are developing the server yourself.
 
 If nothing happens after opening a file, check **Output → SPICE Language Server**, then run **SPICE LSP: Restart Server** from the Command Palette. That Output channel is created as soon as the extension activates.
 
 To switch dialect, use **SPICE LSP: Set Dialect…** (or the status-bar dialect chip). Requires extension **0.2.10+**. If VS Code says the command is not registered, update/reload the extension.
+
+To scaffold sample netlists, run **SPICE LSP: Create Demo Folder**. It copies HSPICE `.sp` / `.lib` samples into `spice-lsp-demo/` under your opened workspace (`same-file.sp` for in-file jumps; `top.sp` + `models.sp` for `.include`; `top-lib.sp` + `corners.lib` for HSPICE `.lib`) and sets the dialect to HSPICE.
 
 ## Features
 

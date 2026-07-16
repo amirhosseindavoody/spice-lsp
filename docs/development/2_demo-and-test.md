@@ -156,8 +156,9 @@ Add `scripts/lsp_smoke.py` to the repo when the server exists.
 3. Open `editors/vscode` in VS Code
 4. **Run and Debug → Launch Extension** (F5)
 5. In the new **[Extension Development Host]** window:
-   - Open `test-data/invalid/unclosed-subckt.cir`
-   - Confirm **Problems** panel lists diagnostics
+   - Run **SPICE LSP: Create Demo Folder** (or open `test-data/invalid/unclosed-subckt.cir`)
+   - In `spice-lsp-demo/top.sp`, press **F12** on `nch` / `inverter` to jump into `models.sp`
+   - Open `test-data/invalid/unclosed-subckt.cir` and confirm **Problems** lists diagnostics
    - Fix syntax, confirm clearing
 
 ### Launch configuration
@@ -219,7 +220,8 @@ Use this script in reviews:
 | 3 | Open invalid netlist | Red squiggle + Problems entry |
 | 4 | Edit to fix | Diagnostic disappears |
 | 5 | Open valid netlist | No errors |
-| 6 | **SPICE LSP: Restart Server** (if command added) | Server reconnects, diagnostics return |
+| 6 | **SPICE LSP: Create Demo Folder** | `spice-lsp-demo/` appears (HSPICE); F12 on `nch` in `top.sp` opens `models.sp`; F12 on `nch_tt` in `top-lib.sp` opens `corners.lib` |
+| 7 | **SPICE LSP: Restart Server** (if needed) | Server reconnects, diagnostics return |
 
 ---
 
