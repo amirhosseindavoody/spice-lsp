@@ -1,6 +1,6 @@
 # Introduction
 
-**Last verified against:** VS Code Create Demo Folder (HSPICE templates under `editors/vscode/demo/`); include/lib resolution, multi-dialect hover (default HSPICE), outline/navigation/diagnostics; completion, formatter, and connectivity still planned
+**Last verified against:** go-to-definition on `.lib 'file' entry` path/entry (and `.include` path); VS Code Create Demo Folder; include/lib resolution, multi-dialect hover (default HSPICE), outline/navigation/diagnostics; completion, formatter, and connectivity still planned
 
 spice-lsp is a language server and VS Code extension for SPICE circuit netlists. It gives you editor feedback while you write `.cir`, `.sp`, `.spf`, `.inc`, `.lib`, and related files — without running a simulator.
 
@@ -12,7 +12,7 @@ Use it when you want syntax and semantic checks, navigation, and dialect-aware h
 |------------|--------------|
 | **Diagnostics** | Syntax errors plus warnings for duplicate names, unknown models/subcircuits, missing includes, and bad `.lib` sections |
 | **Outline** | Document symbols for subcircuits, models, parameters, and instances |
-| **Go to definition / find references** | Jump between `.subckt` / `.model` / `.param` definitions and their uses |
+| **Go to definition / find references** | Jump between `.subckt` / `.model` / `.param` definitions and their uses; also jump from `.include` / `.lib` paths (and `.lib` entry names) into the target file or section |
 | **Include and library resolution** | Follow `.include` / `.inc` and HSPICE `.lib 'file' entry` so models and subcircuits in other files participate in checks and navigation |
 | **Hover** | Dialect reference docs (HSPICE by default) plus file-local detail for subcircuit pins and in-file models |
 | **Dialect selection** | Choose HSPICE, Ngspice, or LTspice (`spiceLsp.dialect`) so hover and related behavior match your simulator |

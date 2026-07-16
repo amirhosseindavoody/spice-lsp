@@ -154,7 +154,7 @@ export async function deactivate() {
 | `models.sp` | Shared models and subcircuits |
 | `top.sp` | `.include 'models.sp'` — **F12** on `nch` / `inverter` / `buffer` jumps across files |
 | `corners.lib` | HSPICE `.lib` / `.endl` corner sections |
-| `top-lib.sp` | `.lib 'corners.lib' TT` — **F12** on `nch_tt` / `pch_tt` jumps into the library |
+| `top-lib.sp` | `.lib 'corners.lib' TT` — **F12** on the path opens `corners.lib`; on `TT` jumps to `.lib TT`; on `nch_tt` / `pch_tt` jumps to the model |
 | `README.md` | Short walkthrough |
 
 If the folder already exists, the command offers **Overwrite** or **Open Existing**. Templates live in the extension package under `demo/` so Marketplace installs ship the same samples.

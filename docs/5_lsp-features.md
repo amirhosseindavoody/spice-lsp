@@ -67,7 +67,7 @@ Diagnostics arrive via server-initiated `textDocument/publishDiagnostics`.
 
 **Navigation:** go to definition and find references for subcircuits, models, and parameters. `textDocument/references` honors `context.includeDeclaration` (omit definition sites when the client passes `false`).
 
-**Include / library resolution:** `.include` / `.inc` and HSPICE `.lib 'file' entry` are followed so model and subcircuit definitions in those files participate in unknown-model checks and go-to-definition. See [Include and library resolution](9_include-and-lib-resolution.md).
+**Include / library resolution:** `.include` / `.inc` and HSPICE `.lib 'file' entry` are followed so model and subcircuit definitions in those files participate in unknown-model checks and go-to-definition. On a `.lib 'file' entry` (or `.include` path) line, go to definition on the path opens that file; on the entry name it jumps to the matching `.lib entry` section header. See [Include and library resolution](9_include-and-lib-resolution.md).
 
 ## Semantic diagnostics
 
@@ -137,7 +137,8 @@ Integration coverage includes:
 3. Edit → updated diagnostics (debounced)
 4. `documentSymbol` returns hierarchical outline for `.subckt` blocks
 5. `definition` on subcircuit reference jumps to `.subckt` definition
-6. `references` on subcircuit definition lists definition + usages; `includeDeclaration: false` omits the definition
+6. `definition` on `.lib 'file' entry` path opens the library file; on the entry name jumps to `.lib entry`
+7. `references` on subcircuit definition lists definition + usages; `includeDeclaration: false` omits the definition
 7. Semantic fixtures (`duplicate-instance.cir`, `unknown-subckt.cir`) produce warning codes
 8. Hover snapshots match reference entries for the active dialect
 

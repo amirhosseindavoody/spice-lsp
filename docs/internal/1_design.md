@@ -18,6 +18,7 @@ The LSP server implements the following capabilities to provide real-time IDE fe
     - **Connectivity (planned):** Dangling nodes (single terminal connection) and floating nets (no DC path to ground). Severity warning; configurable. See [Dialect reference and net semantics](../8_dialect-reference-and-semantics.md).
 - **Navigation (Go to Definition & Find References):**
     - Resolve references for subcircuits (`.subckt`) and models (`.model`), including through `.include` / `.lib`.
+    - On `.lib 'file' entry` / `.include` lines, jump from the path to the file and from a `.lib` entry name to the section header.
     - Map parameter definitions (`.param`) to their usages in expressions.
 - **Autocomplete and Snippets (planned):**
     - Offer context-aware suggestions for basic elements (R, C, L, diodes, transistors).

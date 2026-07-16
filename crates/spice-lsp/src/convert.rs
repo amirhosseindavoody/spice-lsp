@@ -81,6 +81,14 @@ pub fn definition_location_with_includes(
     offset: usize,
     resolution: Option<&IncludeResolution>,
 ) -> Option<Location> {
+    // Prefer include/lib path or entry under the cursor (not indexed as symbols).
+    if let Some(resolution) = resolution {
+        if let Some((file, span)) = resolution.definition_at_include_offset(offset) {
+            let file_uri = path_to_url(&file.path)?;
+            return Some(location(&file_uri, &file.text, span));
+        }
+    }
+
     let symbol = index.symbol_at_offset(offset)?;
 
     if let Some(span) = local_definition_span(index, symbol.kind, &symbol.name) {
@@ -273,5 +281,86 @@ mod tests {
         .expect("definition");
 
         assert!(loc.uri.path().ends_with("models.inc"));
+    }
+
+    #[test]
+    fn definition_jumps_to_lib_path_and_entry() {
+        let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../../test-data/valid/with-include");
+        let source = std::fs::read_to_string(dir.join("top-lib.cir")).unwrap();
+        let options = spice_parser::ResolveOptions {
+            base_dir: dir.clone(),
+            library_paths: Vec::new(),
+            max_depth: 8,
+            dialect: spice_parser::Dialect::Hspice,
+        };
+        let loader = spice_parser::disk_loader_with_overrides(Default::default());
+        let (result, resolution) =
+            spice_parser::analyze_with_includes(&source, &options, &loader);
+
+        let uri = Url::from_file_path(dir.join("top-lib.cir")).unwrap();
+
+        let path_offset = source.find("corners.lib").expect("lib path");
+        let path_loc = definition_location_with_includes(
+            &uri,
+            &source,
+            &result.index,
+            path_offset,
+            Some(&resolution),
+        )
+        .expect("path definition");
+        assert!(
+            path_loc.uri.path().ends_with("corners.lib"),
+            "got {}",
+            path_loc.uri
+        );
+        assert_eq!(path_loc.range.start.line, 0);
+        assert_eq!(path_loc.range.start.character, 0);
+
+        let entry_offset = source.find(" TT").expect("entry") + 1; // on 'T'
+        let entry_loc = definition_location_with_includes(
+            &uri,
+            &source,
+            &result.index,
+            entry_offset,
+            Some(&resolution),
+        )
+        .expect("entry definition");
+        assert!(
+            entry_loc.uri.path().ends_with("corners.lib"),
+            "got {}",
+            entry_loc.uri
+        );
+        // `.lib TT` is the second line of corners.lib (0-based line 1)
+        assert_eq!(entry_loc.range.start.line, 1);
+    }
+
+    #[test]
+    fn definition_jumps_to_include_path() {
+        let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../../test-data/valid/with-include");
+        let source = std::fs::read_to_string(dir.join("top.cir")).unwrap();
+        let options = spice_parser::ResolveOptions {
+            base_dir: dir.clone(),
+            library_paths: Vec::new(),
+            max_depth: 8,
+            dialect: spice_parser::Dialect::Hspice,
+        };
+        let loader = spice_parser::disk_loader_with_overrides(Default::default());
+        let (result, resolution) =
+            spice_parser::analyze_with_includes(&source, &options, &loader);
+
+        let uri = Url::from_file_path(dir.join("top.cir")).unwrap();
+        let offset = source.find("models.inc").expect("include path");
+        let loc = definition_location_with_includes(
+            &uri,
+            &source,
+            &result.index,
+            offset,
+            Some(&resolution),
+        )
+        .expect("include path definition");
+        assert!(loc.uri.path().ends_with("models.inc"));
+        assert_eq!(loc.range.start.line, 0);
     }
 }

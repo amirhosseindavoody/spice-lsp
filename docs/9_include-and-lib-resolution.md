@@ -9,7 +9,8 @@ How spice-lsp resolves `.model`, `.subckt`, and related symbols across `.include
 | Follow `.include` / `.inc` | Load the target file and merge its model/subcircuit definitions into resolution |
 | Follow `.lib 'file' entry` | Load only the named `.LIB entry` … `.ENDL` section from the library file |
 | Unknown model/subckt | `spice/unknown-model` is suppressed when the name is defined in a reachable include or lib section |
-| Go to definition | Jumps to the defining `.model` / `.subckt` in the included or library file |
+| Go to definition (symbol) | Jumps to the defining `.model` / `.subckt` in the included or library file |
+| Go to definition (path / entry) | Cursor on an include/lib path opens that file; cursor on a `.lib` entry name jumps to the `.lib entry` section header |
 | Missing path | `spice/include-not-found` (or `spice/lib-section-not-found`) on the include/lib directive |
 
 Outline (`documentSymbol`) stays **file-local**. Find references stays in the open buffer today (cross-file references may expand later).
@@ -54,7 +55,7 @@ Default max nesting depth is **16** (aligned with common HSPICE nested-`.LIB` li
 | Request | Cross-file behavior |
 |---------|---------------------|
 | `publishDiagnostics` | Uses include graph when publishing for an open document |
-| `textDocument/definition` | May return a `Location` in another file URI |
+| `textDocument/definition` | May return a `Location` in another file URI (model/subckt, include/lib path, or `.lib` entry section) |
 | `textDocument/references` | Same-buffer only |
 | `textDocument/documentSymbol` | Same-buffer only |
 | `textDocument/hover` | File-local symbols still prefer the open buffer; dialect corpus unchanged |

@@ -78,11 +78,24 @@ pub struct IncludedFile {
     pub lib_entry: Option<String>,
 }
 
+/// A root-level `.include` / `.lib` directive that resolved to a file.
+///
+/// Used by go-to-definition when the cursor is on the path or library entry name.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ResolvedInclude {
+    pub path_span: Span,
+    pub entry_span: Option<Span>,
+    pub resolved_path: PathBuf,
+    pub lib_entry: Option<String>,
+}
+
 /// Result of walking the include / `.lib` graph from a root buffer.
 #[derive(Debug, Clone, Default)]
 pub struct IncludeResolution {
     pub files: Vec<IncludedFile>,
     pub diagnostics: Vec<Diagnostic>,
+    /// Successfully resolved include/lib calls from the root buffer (for navigation).
+    pub root_includes: Vec<ResolvedInclude>,
 }
 
 impl IncludeResolution {
@@ -111,6 +124,44 @@ impl IncludeResolution {
     pub fn defines_model_or_subckt(&self, name: &str) -> bool {
         self.find_model_or_subckt(name).is_some()
     }
+
+    /// If `offset` is on a resolved include/lib path or entry, return that target location.
+    ///
+    /// - Cursor on the path → start of the included / library file
+    /// - Cursor on a `.lib` entry name → the matching `.lib entry` section header
+    pub fn definition_at_include_offset(&self, offset: usize) -> Option<(&IncludedFile, Span)> {
+        for inc in &self.root_includes {
+            let on_entry = inc
+                .entry_span
+                .is_some_and(|span| offset_in_span(offset, span));
+            let on_path = offset_in_span(offset, inc.path_span);
+
+            if !on_entry && !on_path {
+                continue;
+            }
+
+            let file = self
+                .files
+                .iter()
+                .find(|f| f.path == inc.resolved_path)?;
+
+            if on_entry {
+                if let Some(entry) = &inc.lib_entry {
+                    let span = find_lib_section_span(&file.text, entry)
+                        .unwrap_or(Span { start: 0, end: 0 });
+                    return Some((file, span));
+                }
+            }
+
+            return Some((file, Span { start: 0, end: 0 }));
+        }
+        None
+    }
+}
+
+fn offset_in_span(offset: usize, span: Span) -> bool {
+    // Match Index::symbol_at_offset: allow the cursor on either edge of the token.
+    offset >= span.start && offset <= span.end
 }
 
 /// Collect include / lib-call directives from classified lines.
@@ -172,6 +223,7 @@ pub fn resolve_includes(
     stack.insert(root_key);
 
     for include in refs {
+        let before = resolution.files.len();
         resolve_one(
             &include,
             &options.base_dir,
@@ -181,6 +233,14 @@ pub fn resolve_includes(
             &mut stack,
             0,
         );
+        if let Some(file) = resolution.files.get(before) {
+            resolution.root_includes.push(ResolvedInclude {
+                path_span: include.path_span,
+                entry_span: include.entry_span,
+                resolved_path: file.path.clone(),
+                lib_entry: include.lib_entry.clone(),
+            });
+        }
     }
 
     resolution
@@ -296,6 +356,18 @@ fn resolve_one(
     }
 
     stack.remove(&path);
+}
+
+/// Locate the `.lib entry` section header name span in a library file.
+pub fn find_lib_section_span(source: &str, entry: &str) -> Option<Span> {
+    for (_, kind) in collect_classified_lines(source) {
+        if let LineKind::LibSection { name, name_span } = kind {
+            if name.eq_ignore_ascii_case(entry) {
+                return Some(name_span);
+            }
+        }
+    }
+    None
 }
 
 /// Keep classified lines that fall inside `.LIB entry` … `.ENDL` (case-insensitive).
@@ -515,6 +587,38 @@ mod tests {
             "unexpected diagnostics: {:?}",
             result.diagnostics
         );
+    }
+
+    #[test]
+    fn lib_path_and_entry_offer_goto_targets() {
+        let dir = fixture_dir();
+        let source = std::fs::read_to_string(dir.join("top-lib.cir")).expect("top-lib.cir");
+        let options = ResolveOptions {
+            base_dir: dir.clone(),
+            library_paths: Vec::new(),
+            max_depth: 8,
+            dialect: Dialect::Hspice,
+        };
+        let loader = disk_loader_with_overrides(HashMap::new());
+        let (_, resolution) = analyze_with_includes(&source, &options, &loader);
+
+        assert_eq!(resolution.root_includes.len(), 1);
+
+        let path_offset = source.find("corners.lib").expect("path");
+        let (file, span) = resolution
+            .definition_at_include_offset(path_offset)
+            .expect("path target");
+        assert!(file.path.ends_with("corners.lib"));
+        assert_eq!(span, Span { start: 0, end: 0 });
+
+        let entry_offset = source.find(" TT").expect("entry") + 1;
+        let (file, span) = resolution
+            .definition_at_include_offset(entry_offset)
+            .expect("entry target");
+        assert!(file.path.ends_with("corners.lib"));
+        let section = find_lib_section_span(&file.text, "TT").expect("TT section");
+        assert_eq!(span, section);
+        assert_eq!(&file.text[span.start..span.end], "TT");
     }
 
     #[test]
