@@ -65,8 +65,8 @@ Parsing is still largely Ngspice-oriented; reference namespaces already switch w
 ## Parser robustness
 
 - Error recovery may leave incomplete indexes until syntax is fixed
-- Very large files still re-parse the full buffer after the debounce window
-- Extracted / post-layout netlists (tens to hundreds of MB) are outside the current full-index design; a size-gated defs-only mode is proposed in [Large-file / extracted mode](internal/3_large-file-extracted-mode.md)
+- Very large files still re-parse the full buffer after the debounce window (Tree-sitter incremental reuse is not wired yet)
+- Large / extracted netlists use **extracted analysis mode** above `spiceLsp.extractedByteThreshold` (default 16 MiB, or when `spiceLsp.analysisMode` is `extracted`): definitions-only indexing, no instance outline/symbols, no duplicate-name scan — see [Large-file / extracted mode](internal/3_large-file-extracted-mode.md)
 - LSP assumes UTF-8 source
 
 ## Editor / LSP

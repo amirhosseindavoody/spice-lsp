@@ -105,6 +105,22 @@
           "default": 16,
           "minimum": 1,
           "description": "Maximum nesting depth when following .include / .lib chains."
+        },
+        "spiceLsp.analysisMode": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "full",
+            "extracted"
+          ],
+          "default": "auto",
+          "description": "Analysis profile. auto uses extracted (defs-only) mode when the buffer reaches spiceLsp.extractedByteThreshold; full always indexes instances; extracted always uses defs-only indexing for large/post-layout netlists."
+        },
+        "spiceLsp.extractedByteThreshold": {
+          "type": "number",
+          "default": 16777216,
+          "minimum": 1,
+          "description": "Byte size at which spiceLsp.analysisMode auto switches to extracted (defs-only) analysis. Default is 16 MiB (16777216)."
         }
       }
     },

@@ -2,8 +2,8 @@
 
 Design for opening post-layout and other **extracted** netlists (tens to hundreds of MB) in the editor without OOM or multi-second hangs, while keeping full analysis for normal schematic-scale decks.
 
-**Status:** Design only — not implemented.  
-**Related:** [Limitations](../7_limitations.md), [Architecture](../4_architecture.md), [Principles](../3_principles.md), [Include and library resolution](../9_include-and-lib-resolution.md), [Design](1_design.md).
+**Status:** Implemented (size gate, defs-only index, thinned diagnostics, settings). Lazy include materialization and Tree-sitter incremental reuse remain follow-ups.  
+**Related:** [Limitations](../7_limitations.md), [Architecture](../4_architecture.md), [Principles](../3_principles.md), [Include and library resolution](../9_include-and-lib-resolution.md), [LSP features](../5_lsp-features.md), [Design](1_design.md).
 
 ---
 
@@ -175,16 +175,17 @@ Worth doing even for schematic files (aligned with ty’s “don’t redo work�
 
 ## 7. Implementation slices
 
-Suggested order:
+| Slice | Status |
+|-------|--------|
+| 1. Gate + profile plumbing (`AnalysisMode` / `AnalysisProfile`, threshold) | Done |
+| 2. Defs-only index + outline without instances; goto via line classify | Done |
+| 3. Diagnostic thinning (no duplicate-name; sparse unknown-model) | Done |
+| 4. Settings (`spiceLsp.analysisMode`, `extractedByteThreshold`) + docs | Done |
+| 5. Defs-only indexes for includes when root is extracted / include is huge | Done |
+| 6. Lazy include materialization (load on demand only) | Open |
+| 7. Perf hygiene — single-parse path, incremental Tree-sitter, position index | Open |
 
-1. **Gate + profile plumbing** — detect size; `AnalysisProfile`; log mode; no behavior change below threshold
-2. **Defs-only index** — skip instance symbols/outline; keep goto for defs; tests with a generated large-ish fixture (or size override in tests)
-3. **Diagnostic thinning** — disable duplicate-instance and other all-instance scans in extracted mode
-4. **Lazy includes** — definition maps without retaining full include bodies by default
-5. **Perf hygiene** — single-parse analyze path; incremental Tree-sitter; position index
-6. **Settings** — `spiceLsp.analysisMode`, optional threshold overrides; document in user guide + limitations
-
-Public docs (`5_lsp-features`, `7_limitations`, README capability table) update when slice 1–3 ship — not before.
+Public docs: [LSP features](../5_lsp-features.md), [Limitations](../7_limitations.md), VS Code README.
 
 ---
 

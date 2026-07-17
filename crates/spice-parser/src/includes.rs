@@ -3,10 +3,13 @@
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 
-use crate::analyze::{analyze_lines, collect_classified_lines};
+use crate::analyze::{analyze_lines_with_profile, collect_classified_lines};
 use crate::diagnostic::{Diagnostic, Severity, Span};
 use crate::dialect::Dialect;
-use crate::symbols::{build_index, Index, LineKind, SymbolKind};
+use crate::profile::{
+    resolve_profile, AnalysisMode, AnalysisProfile, DEFAULT_EXTRACTED_BYTE_THRESHOLD,
+};
+use crate::symbols::{build_index_with_profile, Index, LineKind, SymbolKind};
 
 /// Default nesting limit for include / `.lib` chains.
 pub const DEFAULT_MAX_INCLUDE_DEPTH: usize = 16;
@@ -55,6 +58,10 @@ pub struct ResolveOptions {
     pub library_paths: Vec<PathBuf>,
     pub max_depth: usize,
     pub dialect: Dialect,
+    /// `auto` / `full` / `extracted` — see [`AnalysisMode`].
+    pub analysis_mode: AnalysisMode,
+    /// Byte threshold for [`AnalysisMode::Auto`].
+    pub extracted_byte_threshold: usize,
 }
 
 impl Default for ResolveOptions {
@@ -64,6 +71,8 @@ impl Default for ResolveOptions {
             library_paths: Vec::new(),
             max_depth: DEFAULT_MAX_INCLUDE_DEPTH,
             dialect: Dialect::default(),
+            analysis_mode: AnalysisMode::default(),
+            extracted_byte_threshold: DEFAULT_EXTRACTED_BYTE_THRESHOLD,
         }
     }
 }
@@ -209,7 +218,18 @@ pub fn resolve_includes(
     loader: &FileLoader<'_>,
 ) -> IncludeResolution {
     let lines = collect_classified_lines(source);
-    let refs = collect_include_refs(&lines);
+    resolve_includes_with_lines(source, &lines, options, loader)
+}
+
+/// Like [`resolve_includes`] but reuses a pre-classified line list for the root.
+pub fn resolve_includes_with_lines(
+    source: &str,
+    lines: &[(Span, LineKind)],
+    options: &ResolveOptions,
+    loader: &FileLoader<'_>,
+) -> IncludeResolution {
+    let root_profile = options.root_profile_for(source.len());
+    let refs = collect_include_refs(lines);
     let mut resolution = IncludeResolution::default();
     let mut stack = HashSet::new();
     let root_key = options.base_dir.join("__root__");
@@ -225,6 +245,7 @@ pub fn resolve_includes(
             &mut resolution,
             &mut stack,
             0,
+            root_profile,
         );
         if let Some(file) = resolution.files.get(before) {
             resolution.root_includes.push(ResolvedInclude {
@@ -247,6 +268,7 @@ fn resolve_one(
     resolution: &mut IncludeResolution,
     stack: &mut HashSet<PathBuf>,
     depth: usize,
+    root_profile: AnalysisProfile,
 ) {
     if depth >= options.max_depth {
         resolution.diagnostics.push(Diagnostic {
@@ -322,7 +344,8 @@ fn resolve_one(
         }
     }
 
-    let (index, _) = build_index(&text, &section_lines);
+    let include_profile = options.include_index_profile(root_profile, text.len());
+    let (index, _) = build_index_with_profile(&text, &section_lines, include_profile);
     let nested_refs = collect_include_refs(&section_lines);
     let parent_dir = path.parent().unwrap_or(base_dir).to_path_buf();
 
@@ -342,6 +365,7 @@ fn resolve_one(
             resolution,
             stack,
             depth + 1,
+            root_profile,
         );
     }
 
@@ -423,15 +447,41 @@ fn unknown_model_name(message: &str) -> Option<&str> {
     Some(&message[start..end])
 }
 
+impl ResolveOptions {
+    /// Profile for a root buffer of `source_len` bytes under these options.
+    pub fn root_profile_for(&self, source_len: usize) -> AnalysisProfile {
+        resolve_profile(self.analysis_mode, source_len, self.extracted_byte_threshold)
+    }
+
+    /// Index profile for an included file when the root uses `root_profile`.
+    pub fn include_index_profile(
+        &self,
+        root_profile: AnalysisProfile,
+        include_len: usize,
+    ) -> AnalysisProfile {
+        match root_profile {
+            AnalysisProfile::Extracted => AnalysisProfile::Extracted,
+            AnalysisProfile::Full => resolve_profile(
+                AnalysisMode::Auto,
+                include_len,
+                self.extracted_byte_threshold,
+            ),
+        }
+    }
+}
+
 /// Analyze `source` and merge include/lib resolution into diagnostics.
 pub fn analyze_with_includes(
     source: &str,
     options: &ResolveOptions,
     loader: &FileLoader<'_>,
 ) -> (crate::ParseResult, IncludeResolution) {
+    let profile = options.root_profile_for(source.len());
+    // Single classify pass for the root; analyze_lines still parses once for syntax.
     let lines = collect_classified_lines(source);
-    let mut result = analyze_lines(source, options.dialect, &lines);
-    let resolution = resolve_includes(source, options, loader);
+    let mut result =
+        analyze_lines_with_profile(source, options.dialect, &lines, profile);
+    let resolution = resolve_includes_with_lines(source, &lines, options, loader);
     result.diagnostics = filter_unknown_models(
         std::mem::take(&mut result.diagnostics),
         &result.index,
@@ -520,7 +570,7 @@ mod tests {
 ";
         let lines = collect_classified_lines(source);
         let tt = lines_for_lib_section(&lines, "TT");
-        let (index, _) = build_index(source, &tt);
+        let (index, _) = build_index_with_profile(source, &tt, AnalysisProfile::Full);
         assert!(index.has_definition(SymbolKind::Model, "nmos_tt"));
         assert!(!index.has_definition(SymbolKind::Model, "nmos_ff"));
     }
@@ -534,6 +584,7 @@ mod tests {
             library_paths: Vec::new(),
             max_depth: 8,
             dialect: Dialect::Hspice,
+            ..Default::default()
         };
         let loader = disk_loader_with_overrides(HashMap::new());
         let (result, resolution) = analyze_with_includes(&source, &options, &loader);
@@ -565,6 +616,7 @@ mod tests {
             library_paths: Vec::new(),
             max_depth: 8,
             dialect: Dialect::Hspice,
+            ..Default::default()
         };
         let loader = disk_loader_with_overrides(HashMap::new());
         let (result, resolution) = analyze_with_includes(&source, &options, &loader);
@@ -590,6 +642,7 @@ mod tests {
             library_paths: Vec::new(),
             max_depth: 8,
             dialect: Dialect::Hspice,
+            ..Default::default()
         };
         let loader = disk_loader_with_overrides(HashMap::new());
         let (_, resolution) = analyze_with_includes(&source, &options, &loader);

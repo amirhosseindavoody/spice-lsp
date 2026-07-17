@@ -5,8 +5,9 @@ use std::time::Duration;
 
 use serde_json::Value;
 use spice_parser::{
-    analyze_with_includes, disk_loader_with_overrides, format_source, hover_token_at, Dialect,
-    FormatOptions, IncludeResolution, Index, ResolveOptions, DEFAULT_MAX_INCLUDE_DEPTH,
+    analyze_with_includes, disk_loader_with_overrides, format_source, hover_token_at, AnalysisMode,
+    Dialect, FormatOptions, IncludeResolution, Index, ResolveOptions,
+    DEFAULT_EXTRACTED_BYTE_THRESHOLD, DEFAULT_MAX_INCLUDE_DEPTH,
 };
 use spice_reference::ReferenceIndex;
 use tokio::sync::RwLock;
@@ -36,6 +37,8 @@ struct Document {
 struct WorkspaceConfig {
     library_paths: Vec<PathBuf>,
     max_include_depth: usize,
+    analysis_mode: AnalysisMode,
+    extracted_byte_threshold: usize,
 }
 
 impl Default for WorkspaceConfig {
@@ -43,6 +46,8 @@ impl Default for WorkspaceConfig {
         Self {
             library_paths: Vec::new(),
             max_include_depth: DEFAULT_MAX_INCLUDE_DEPTH,
+            analysis_mode: AnalysisMode::default(),
+            extracted_byte_threshold: DEFAULT_EXTRACTED_BYTE_THRESHOLD,
         }
     }
 }
@@ -106,8 +111,28 @@ impl Backend {
         {
             config.max_include_depth = depth as usize;
         }
+        if let Some(raw) = spice.get("analysisMode").and_then(Value::as_str) {
+            config.analysis_mode = AnalysisMode::parse_or_default(raw).0;
+        }
+        if let Some(n) = spice
+            .get("extractedByteThreshold")
+            .and_then(Value::as_u64)
+        {
+            config.extracted_byte_threshold = n as usize;
+        }
 
         Some((dialect, config))
+    }
+
+    fn resolve_options(uri: &Url, dialect: Dialect, config: &WorkspaceConfig) -> ResolveOptions {
+        ResolveOptions {
+            base_dir: Self::base_dir_for(uri),
+            library_paths: config.library_paths.clone(),
+            max_depth: config.max_include_depth,
+            dialect,
+            analysis_mode: config.analysis_mode,
+            extracted_byte_threshold: config.extracted_byte_threshold,
+        }
     }
 
     async fn set_dialect(&self, dialect: Dialect) {
@@ -149,16 +174,16 @@ impl Backend {
         &self,
         uri: &Url,
         text: &str,
-    ) -> (Vec<Diagnostic>, Index, IncludeResolution) {
+    ) -> (
+        Vec<Diagnostic>,
+        Index,
+        IncludeResolution,
+        spice_parser::AnalysisProfile,
+    ) {
         let dialect = self.current_dialect().await;
         let config = self.current_config().await;
         let overrides = self.open_buffer_overrides().await;
-        let options = ResolveOptions {
-            base_dir: Self::base_dir_for(uri),
-            library_paths: config.library_paths,
-            max_depth: config.max_include_depth,
-            dialect,
-        };
+        let options = Self::resolve_options(uri, dialect, &config);
         let loader = disk_loader_with_overrides(overrides);
         let (result, resolution) = analyze_with_includes(text, &options, &loader);
         let diagnostics = result
@@ -166,22 +191,45 @@ impl Backend {
             .into_iter()
             .map(|d| to_lsp_diagnostic(text, d))
             .collect::<Vec<_>>();
-        (diagnostics, result.index, resolution)
+        (
+            diagnostics,
+            result.index,
+            resolution,
+            result.profile,
+        )
     }
 
-    async fn analyze_and_store(&self, uri: &Url, text: &str) -> (Vec<Diagnostic>, Index) {
-        let (diagnostics, index, resolution) = self.analyze_document(uri, text).await;
+    async fn analyze_and_store(
+        &self,
+        uri: &Url,
+        text: &str,
+        log_extracted: bool,
+    ) -> (Vec<Diagnostic>, Index) {
+        let (diagnostics, index, resolution, profile) = self.analyze_document(uri, text).await;
 
         if let Some(doc) = self.documents.write().await.get_mut(uri) {
             doc.index = index.clone();
             doc.includes = resolution;
         }
 
+        if log_extracted && matches!(profile, spice_parser::AnalysisProfile::Extracted) {
+            let threshold = self.current_config().await.extracted_byte_threshold;
+            self.client
+                .log_message(
+                    MessageType::INFO,
+                    format!(
+                        "extracted analysis mode for {} ({} bytes, threshold {}) — instance indexing disabled",
+                        uri, text.len(), threshold
+                    ),
+                )
+                .await;
+        }
+
         (diagnostics, index)
     }
 
     async fn publish_diagnostics(&self, uri: Url, text: &str, version: Option<i32>) {
-        let (diagnostics, _) = self.analyze_and_store(&uri, text).await;
+        let (diagnostics, _) = self.analyze_and_store(&uri, text, true).await;
         self.client
             .publish_diagnostics(uri, diagnostics, version)
             .await;
@@ -251,9 +299,11 @@ impl Backend {
                     .ok()
                     .and_then(|p| p.parent().map(Path::to_path_buf))
                     .unwrap_or_else(|| PathBuf::from(".")),
-                library_paths: config.library_paths,
+                library_paths: config.library_paths.clone(),
                 max_depth: config.max_include_depth,
                 dialect,
+                analysis_mode: config.analysis_mode,
+                extracted_byte_threshold: config.extracted_byte_threshold,
             };
             let loader = disk_loader_with_overrides(overrides);
             let (result, resolution) = analyze_with_includes(&text, &options, &loader);
@@ -318,7 +368,7 @@ impl Backend {
             return;
         };
 
-        let (diagnostics, index, resolution) = self.analyze_document(uri, &text).await;
+        let (diagnostics, index, resolution, _profile) = self.analyze_document(uri, &text).await;
         let _ = diagnostics;
         let mut docs = self.documents.write().await;
         if let Some(doc) = docs.get_mut(uri) {
@@ -351,6 +401,12 @@ impl LanguageServer for Backend {
                 .and_then(Value::as_u64)
             {
                 config.max_include_depth = depth as usize;
+            }
+            if let Some(Value::String(raw)) = map.get("analysisMode") {
+                config.analysis_mode = AnalysisMode::parse_or_default(raw).0;
+            }
+            if let Some(n) = map.get("extractedByteThreshold").and_then(Value::as_u64) {
+                config.extracted_byte_threshold = n as usize;
             }
             self.set_config(config).await;
         }
@@ -421,6 +477,8 @@ impl LanguageServer for Backend {
             let previous = self.current_config().await;
             if previous.library_paths != config.library_paths
                 || previous.max_include_depth != config.max_include_depth
+                || previous.analysis_mode != config.analysis_mode
+                || previous.extracted_byte_threshold != config.extracted_byte_threshold
             {
                 self.set_config(config).await;
                 reanalyze = true;
@@ -773,6 +831,7 @@ mod tests {
             library_paths: Vec::new(),
             max_depth: 8,
             dialect: Dialect::Hspice,
+            ..Default::default()
         };
         let loader = disk_loader_with_overrides(HashMap::new());
         let (result, _) = analyze_with_includes(&source, &options, &loader);

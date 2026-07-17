@@ -65,11 +65,28 @@ Diagnostics arrive via server-initiated `textDocument/publishDiagnostics`.
 | `Namespace` | `.subckt` block |
 | `Class` | `.model` |
 | `Variable` | `.param` |
-| `Field` | Instance line |
+| `Field` | Instance line (full analysis only) |
 
 **Navigation:** go to definition and find references for subcircuits, models, and parameters. `textDocument/references` honors `context.includeDeclaration` (omit definition sites when the client passes `false`).
 
 **Include / library resolution:** `.include` / `.inc` and HSPICE `.lib 'file' entry` are followed so model and subcircuit definitions in those files participate in unknown-model checks and go-to-definition. On a `.lib 'file' entry` (or `.include` path) line, go to definition on the path opens that file; on the entry name it jumps to the matching `.lib entry` section header. See [Include and library resolution](9_include-and-lib-resolution.md).
+
+### Large-file / extracted analysis
+
+| Setting | Default | Effect |
+|---------|---------|--------|
+| `spiceLsp.analysisMode` | `auto` | `auto` / `full` / `extracted` |
+| `spiceLsp.extractedByteThreshold` | `16777216` (16 MiB) | Size gate for `auto` |
+
+In **extracted** mode (forced, or `auto` when the buffer reaches the threshold):
+
+- Index keeps `.subckt` / `.model` / `.param` definitions
+- Instance symbols and outline children are omitted
+- `spice/duplicate-name` is not emitted
+- Unknown-model still reports unique missing model/subckt names (sparse refs)
+- Go to definition on an instance’s model/subckt token still works via line classification
+
+Design detail: [Large-file / extracted mode](internal/3_large-file-extracted-mode.md).
 
 ## Semantic diagnostics
 
