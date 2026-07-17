@@ -99,11 +99,7 @@ pub struct IncludeResolution {
 }
 
 impl IncludeResolution {
-    pub fn find_definition(
-        &self,
-        kind: SymbolKind,
-        name: &str,
-    ) -> Option<(&IncludedFile, Span)> {
+    pub fn find_definition(&self, kind: SymbolKind, name: &str) -> Option<(&IncludedFile, Span)> {
         for file in &self.files {
             if let Some(span) = file.index.definition_span(kind, name) {
                 return Some((file, span));
@@ -140,10 +136,7 @@ impl IncludeResolution {
                 continue;
             }
 
-            let file = self
-                .files
-                .iter()
-                .find(|f| f.path == inc.resolved_path)?;
+            let file = self.files.iter().find(|f| f.path == inc.resolved_path)?;
 
             if on_entry {
                 if let Some(entry) = &inc.lib_entry {
@@ -319,10 +312,7 @@ fn resolve_one(
     if let Some(entry) = &include.lib_entry {
         if !section_ok {
             resolution.diagnostics.push(Diagnostic {
-                message: format!(
-                    "library section '{entry}' not found in '{}'",
-                    include.path
-                ),
+                message: format!("library section '{entry}' not found in '{}'", include.path),
                 severity: Severity::Warning,
                 span: include.entry_span.unwrap_or(include.path_span),
                 code: Some("spice/lib-section-not-found".into()),
@@ -371,10 +361,7 @@ pub fn find_lib_section_span(source: &str, entry: &str) -> Option<Span> {
 }
 
 /// Keep classified lines that fall inside `.LIB entry` … `.ENDL` (case-insensitive).
-pub fn lines_for_lib_section(
-    lines: &[(Span, LineKind)],
-    entry: &str,
-) -> Vec<(Span, LineKind)> {
+pub fn lines_for_lib_section(lines: &[(Span, LineKind)], entry: &str) -> Vec<(Span, LineKind)> {
     let mut out = Vec::new();
     let mut in_section = false;
 
@@ -445,9 +432,14 @@ pub fn analyze_with_includes(
     let lines = collect_classified_lines(source);
     let mut result = analyze_lines(source, options.dialect, &lines);
     let resolution = resolve_includes(source, options, loader);
-    result.diagnostics =
-        filter_unknown_models(std::mem::take(&mut result.diagnostics), &result.index, &resolution);
-    result.diagnostics.extend(resolution.diagnostics.iter().cloned());
+    result.diagnostics = filter_unknown_models(
+        std::mem::take(&mut result.diagnostics),
+        &result.index,
+        &resolution,
+    );
+    result
+        .diagnostics
+        .extend(resolution.diagnostics.iter().cloned());
     result
         .diagnostics
         .sort_by_key(|d| (d.span.start, d.span.end));

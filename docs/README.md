@@ -1,6 +1,6 @@
 # Introduction
 
-**Last verified against:** go-to-definition on `.lib 'file' entry` path/entry (and `.include` path); VS Code Create Demo Folder; include/lib resolution, multi-dialect hover (default HSPICE), outline/navigation/diagnostics; completion, formatter, and connectivity still planned
+**Last verified against:** document formatting (`textDocument/formatting` + `spice-lsp format`); go-to-definition on `.lib` / `.include`; include/lib resolution; multi-dialect hover (default HSPICE); outline/navigation/diagnostics; completion and connectivity still planned
 
 spice-lsp is a language server and VS Code extension for SPICE circuit netlists. It gives you editor feedback while you write `.cir`, `.sp`, `.spf`, `.inc`, `.lib`, and related files — without running a simulator.
 
@@ -16,6 +16,7 @@ Use it when you want syntax and semantic checks, navigation, and dialect-aware h
 | **Include and library resolution** | Follow `.include` / `.inc` and HSPICE `.lib 'file' entry` so models and subcircuits in other files participate in checks and navigation |
 | **Hover** | Dialect reference docs (HSPICE by default) plus file-local detail for subcircuit pins and in-file models |
 | **Dialect selection** | Choose HSPICE, Ngspice, or LTspice (`spiceLsp.dialect`) so hover and related behavior match your simulator |
+| **Formatting** | Columnar instance alignment, `+` wrap, directive keyword casing via Format Document or `spice-lsp format` |
 
 The VS Code extension starts the `spice-lsp` binary over stdio. The same binary works with any LSP-capable editor.
 
@@ -48,7 +49,7 @@ Goals and non-goals: [Principles](3_principles.md). Known gaps: [Limitations](7_
 | `.include` / `.lib` behavior | [Include and Library Resolution](9_include-and-lib-resolution.md) |
 | Dialect docs and net semantics | [Dialect Reference and Net Semantics](8_dialect-reference-and-semantics.md) |
 | Per-dialect reference pages | [Dialect reference catalog](reference/README.md) |
-| Formatter design | [Formatter](6_formatter.md) |
+| Formatting rules and CLI | [Formatter](6_formatter.md) |
 | Building from source / CI | [Build](development/1_build.md) |
 | Extension layout and publishing | [VS Code Integration](development/3_vscode-integration.md) |
 

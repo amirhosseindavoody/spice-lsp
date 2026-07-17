@@ -31,12 +31,12 @@ The LSP server implements the following capabilities to provide real-time IDE fe
 
 ### 2.2 Formatter Capabilities
 
-The formatting engine processes netlist files to enforce consistent layouts (planned):
+The formatting engine processes netlist files to enforce consistent layouts:
 
 - **Columnar Alignment:** Align component names, nodes, model references, values, and parameters in tabular columns.
-- **Case Normalization:** Enforce uppercase, lowercase, or camelCase formatting for keywords, control options, and unit suffixes.
-- **Continuation-Line Standardization:** Format multi-line statements wrapped with the `+` character using predictable indentation.
-- **Comment Block Structuring:** Standardize inline comments (using `;` or `$`) and line-start comments (`*`).
+- **Case Normalization:** Enforce uppercase, lowercase, or preserve for leading `.directive` keywords.
+- **Continuation-Line Standardization:** Fold and re-wrap multi-line statements with the `+` character using predictable indentation.
+- **Comment Preservation:** Keep line-start comments (`*`, `;`, `$`); normalize spacing before inline `;` comments.
 
 ---
 
@@ -63,7 +63,6 @@ Capabilities that are not yet shipped, in rough priority:
 | Focus | Notes |
 |-------|-------|
 | Completion | Element/directive suggestions; reuse reference corpus for docs |
-| Formatter | Columnar alignment, continuation formatting — [Formatter](../6_formatter.md) |
 | Connectivity | Dangling-node and floating-net diagnostics — [Dialect reference and net semantics](../8_dialect-reference-and-semantics.md) |
 | Deeper dialect grammar | LTspice / HSPICE parse quirks beyond the shared grammar |
 
@@ -122,7 +121,7 @@ The system uses a classic compiler frontend architecture integrated into an even
 │    │   Hover docs for directives, options, elements    │
 │    │                                                   │
 │    └─► [Formatter Engine] ◄─────────────────────────┘   │
-│        Planned: columnar alignment & continuations     │
+│        Columnar alignment, continuations, keyword case │
 └────────────────────────────────────────────────────────┘
 ```
 
@@ -130,7 +129,7 @@ The system uses a classic compiler frontend architecture integrated into an even
 - **Incremental Parsing:** Tree-sitter maintains an active syntax tree; edits re-parse only changed ranges.
 - **Reference Index:** Loads structured JSON entries from `reference/` per active dialect; powers `textDocument/hover` and will enrich completion documentation. Maintained manually over time — see [Dialect reference and net semantics](../8_dialect-reference-and-semantics.md).
 - **Net Graph (planned):** Builds terminal connectivity from instance lines; emits dangling-node and floating-net warnings.
-- **Formatting Pipeline (planned):** CST → column rules → `TextEdit` actions.
+- **Formatting Pipeline:** Line/token pretty-print → column rules → `TextEdit` (full document).
 
 ### 5.3 Key Dependencies
 

@@ -11,7 +11,7 @@ Every feature belongs to one of these layers:
 | **1. Parse** | Tree-sitter CST, syntax diagnostics | Shipped |
 | **2. Index** | Symbols, scopes, cross-references, include/lib graph | Shipped |
 | **3. Assist** | Hover (reference + file-local); completion | Hover shipped; completion planned |
-| **4. Deep semantics** | Net connectivity; formatter | Planned |
+| **4. Deep semantics** | Formatter; net connectivity | Formatter shipped; connectivity planned |
 
 Layer 4 and the reference corpus are documented in [Dialect reference and net semantics](8_dialect-reference-and-semantics.md).
 
@@ -31,7 +31,8 @@ Layer 4 and the reference corpus are documented in [Dialect reference and net se
 │  │  • text sync, publishDiagnostics                         │   │
 │  │  • symbols, definition, references                       │   │
 │  │  • hover (reference corpus + file-local)                 │   │
-│  │  • (planned) completion, formatting                      │   │
+│  │  • formatting (`format_source` → TextEdit)               │   │
+│  │  • (planned) completion                                  │   │
 │  └────────────────────────┬─────────────────────────────────┘   │
 └───────────────────────────┼─────────────────────────────────────┘
                             │
@@ -48,8 +49,8 @@ Layer 4 and the reference corpus are documented in [Dialect reference and net se
 
 | Crate / directory | Role |
 |-------------------|------|
-| `crates/spice-lsp` | LSP server, JSON-RPC, document store |
-| `crates/spice-parser` | Parsing, symbol index, diagnostics; formatter home when implemented |
+| `crates/spice-lsp` | LSP server, JSON-RPC, document store; `format` CLI subcommand |
+| `crates/spice-parser` | Parsing, symbol index, diagnostics, formatter (`format_source`) |
 | `crates/spice-reference` | Load and query dialect reference entries |
 | `tree-sitter-spice/` | Grammar and query files |
 | `reference/` | Curated JSON per dialect — authored over time |
@@ -59,14 +60,15 @@ Layer 4 and the reference corpus are documented in [Dialect reference and net se
 ## LSP server lifecycle
 
 1. **Client connects** via stdio; sends `initialize` with client capabilities and dialect option.
-2. **Server responds** with capabilities (incremental sync, diagnostics, symbols, definition, references, hover).
+2. **Server responds** with capabilities (incremental sync, diagnostics, symbols, definition, references, hover, formatting).
 3. **Document open/change** updates an in-memory map of open buffers.
 4. **On each change** (debounced ~150 ms):
    - Re-parse with Tree-sitter
    - Run diagnostic passes (syntax + semantic + include resolution)
    - Send `textDocument/publishDiagnostics` with the document version
 5. **Hover** resolves against the CST and `spice-reference`. Navigation requests re-analyze on demand so the symbol index stays current even when diagnostics are still debouncing.
-6. **Shutdown** exits cleanly.
+6. **Formatting** pretty-prints the buffer via `spice_parser::format_source` and returns a full-document `TextEdit` when needed.
+7. **Shutdown** exits cleanly.
 
 ### Document model
 
@@ -109,7 +111,7 @@ Use the symbol index and reference corpus for **hover** (subcircuit pin lists, i
 
 ### Format and dialect
 
-Dialect setting selects reference namespace and (later) grammar quirks / formatter profiles. Formatter engine reads CST → `TextEdit` list — see [Formatter](6_formatter.md).
+Dialect setting selects reference namespace and (later) grammar quirks / formatter profiles. The formatter pretty-prints line tokens (column alignment, `+` wrap, directive casing) and returns a full-document `TextEdit` — see [Formatter](6_formatter.md).
 
 ### Reference docs and connectivity
 

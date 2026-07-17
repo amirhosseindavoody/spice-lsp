@@ -10,7 +10,7 @@ A developer editing a netlist in VS Code should get:
 2. **Jump to definitions and a useful outline** — subcircuits, models, parameters
 3. **Dialect-aware documentation on hover** — curated reference plus file-local pin/model detail
 4. **Include-aware analysis** — `.include` / `.lib` participate in checks and navigation
-5. **Consistent formatting and completion** (planned) — align netlists and suggest elements/directives
+5. **Consistent formatting** (shipped) **and completion** (planned) — align netlists; suggest elements/directives later
 6. **Connectivity warnings** (planned) — dangling nodes and floating nets before simulation
 
 Details on reference hover and connectivity: [Dialect reference and net semantics](8_dialect-reference-and-semantics.md).

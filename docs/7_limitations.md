@@ -9,6 +9,7 @@ Known constraints and unsupported behavior. Updated as the parser and LSP mature
 - Document outline, go to definition, and find references
 - Dialect-aware hover from the curated `reference/` corpus (default HSPICE) plus file-local pin/model detail
 - `.include` / `.lib` resolution for model and subcircuit definitions
+- Document formatting (`textDocument/formatting`) and `spice-lsp format` CLI
 - Debounced diagnostics on edit; `textDocument/references` honors `includeDeclaration`
 - Marketplace extension with bundled binaries, TextMate highlighting, and restart command
 - File associations for `.cir`, `.sp`, `.spf`, `.net`, `.ckt`, `.inc`, and `.lib`
@@ -20,7 +21,8 @@ Known constraints and unsupported behavior. Updated as the parser and LSP mature
 | Shared grammar for all dialects | Prefer common SPICE constructs; dialect-specific parse quirks grow over time; hover/docs already switch |
 | No connectivity analysis | Manual review until dangling/floating checks land |
 | Include graph is definition-focused | `.include` / `.lib` resolve models and subcircuits for diagnostics and go-to-definition; outline and find-references stay file-local — see [Include and library resolution](9_include-and-lib-resolution.md) |
-| No formatter or completion | Manual alignment / typing for now |
+| No completion yet | Type element/directive names manually |
+| Formatter has no dialect profiles yet | Shared alignment/casing rules for all dialects; see [Formatter](6_formatter.md) |
 | Comment toggle uses `*` only | `;` and `$` are highlighted as comments; VS Code allows one `lineComment` |
 | No Windows arm64 bundled binary | Set `spiceLsp.serverPath` or put `spice-lsp` on `PATH` |
 | Linux bundled binary needs glibc 2.31+ | Upgrade the host OS, or build `spice-lsp` locally and set `spiceLsp.serverPath` |

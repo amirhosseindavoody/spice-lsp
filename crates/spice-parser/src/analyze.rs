@@ -1,7 +1,7 @@
 use tree_sitter::{Node, Parser, Tree};
 
-use crate::dialect::Dialect;
 use crate::diagnostic::{Diagnostic, Severity, Span};
+use crate::dialect::Dialect;
 use crate::symbols::{build_index, classify_line, Index, LineKind};
 
 /// Result of analyzing a netlist buffer.
@@ -38,11 +38,7 @@ pub fn collect_classified_lines(source: &str) -> Vec<(Span, LineKind)> {
 }
 
 /// Analyze pre-classified lines (shared by plain analyze and include resolution).
-pub fn analyze_lines(
-    source: &str,
-    dialect: Dialect,
-    lines: &[(Span, LineKind)],
-) -> ParseResult {
+pub fn analyze_lines(source: &str, dialect: Dialect, lines: &[(Span, LineKind)]) -> ParseResult {
     let _profile = dialect.profile();
 
     let mut parser = Parser::new();
@@ -174,8 +170,7 @@ mod tests {
         let result = analyze(&source);
         assert!(
             result.diagnostics.iter().any(|d| {
-                d.code.as_deref() == Some("spice/duplicate-name")
-                    && d.message.contains("R1")
+                d.code.as_deref() == Some("spice/duplicate-name") && d.message.contains("R1")
             }),
             "expected duplicate R1 warning, got {:?}",
             result.diagnostics
@@ -188,8 +183,7 @@ mod tests {
         let result = analyze(&source);
         assert!(
             result.diagnostics.iter().any(|d| {
-                d.code.as_deref() == Some("spice/unknown-model")
-                    && d.message.contains("missingbuf")
+                d.code.as_deref() == Some("spice/unknown-model") && d.message.contains("missingbuf")
             }),
             "expected unknown subcircuit warning, got {:?}",
             result.diagnostics

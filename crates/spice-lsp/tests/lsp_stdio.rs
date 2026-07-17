@@ -80,7 +80,9 @@ impl LspProcess {
     }
 }
 
-async fn read_message(reader: &mut BufReader<tokio::process::ChildStdout>) -> std::io::Result<Value> {
+async fn read_message(
+    reader: &mut BufReader<tokio::process::ChildStdout>,
+) -> std::io::Result<Value> {
     let mut content_length = None;
     loop {
         let mut line = String::new();
@@ -148,7 +150,10 @@ async fn initialize_advertises_incremental_sync() {
         }))
         .await;
     let response = server.read_response(1).await;
-    assert_eq!(response["result"]["capabilities"]["textDocumentSync"]["change"], 2);
+    assert_eq!(
+        response["result"]["capabilities"]["textDocumentSync"]["change"],
+        2
+    );
     server.shutdown().await;
 }
 
@@ -169,6 +174,55 @@ async fn initialize_advertises_navigation_capabilities() {
     assert_eq!(caps["definitionProvider"], true);
     assert_eq!(caps["referencesProvider"], true);
     assert_eq!(caps["hoverProvider"], true);
+    assert_eq!(caps["documentFormattingProvider"], true);
+    assert_eq!(caps["documentRangeFormattingProvider"], true);
+    server.shutdown().await;
+}
+
+#[tokio::test]
+async fn formatting_aligns_instance_lines() {
+    let uri = "file:///test/format.cir";
+    let source = "* before\nR1 in out 1k\nC1 out 0 1u\nX1 a b mycell\n";
+
+    let mut server = LspProcess::spawn().await;
+    handshake(&mut server).await;
+    server
+        .send(json!({
+            "jsonrpc": "2.0",
+            "method": "textDocument/didOpen",
+            "params": {
+                "textDocument": {
+                    "uri": uri,
+                    "languageId": "spice",
+                    "version": 1,
+                    "text": source
+                }
+            }
+        }))
+        .await;
+    let _ = server
+        .read_notification("textDocument/publishDiagnostics")
+        .await;
+
+    server
+        .send(json!({
+            "jsonrpc": "2.0",
+            "id": 2,
+            "method": "textDocument/formatting",
+            "params": {
+                "textDocument": { "uri": uri },
+                "options": { "tabSize": 2, "insertSpaces": true }
+            }
+        }))
+        .await;
+    let response = server.read_response(2).await;
+    let edits = response["result"].as_array().expect("edits array");
+    assert_eq!(edits.len(), 1);
+    let new_text = edits[0]["newText"].as_str().expect("newText");
+    assert_eq!(
+        new_text,
+        "* before\nR1 in  out 1k\nC1 out 0   1u\nX1 a   b   mycell\n"
+    );
     server.shutdown().await;
 }
 
@@ -295,9 +349,8 @@ async fn hover_on_hspice_dc_and_data() {
         .read_notification("textDocument/publishDiagnostics")
         .await;
 
-    for (idx, (needle, expect_id_fragment)) in [("data", "data"), ("dc", "dc")]
-        .into_iter()
-        .enumerate()
+    for (idx, (needle, expect_id_fragment)) in
+        [("data", "data"), ("dc", "dc")].into_iter().enumerate()
     {
         let offset = source.find(needle).expect(needle);
         let (line, character) = byte_offset_to_line_col(&source, offset);
@@ -668,11 +721,9 @@ async fn unclosed_subckt_publishes_diagnostics() {
         .as_array()
         .expect("diagnostics");
     assert!(!diagnostics.is_empty());
-    assert!(
-        diagnostics
-            .iter()
-            .any(|d| d["message"].as_str().unwrap().contains("missing .ends"))
-    );
+    assert!(diagnostics
+        .iter()
+        .any(|d| d["message"].as_str().unwrap().contains("missing .ends")));
     server.shutdown().await;
 }
 
@@ -701,12 +752,10 @@ async fn valid_netlist_publishes_no_diagnostics() {
     let notification = server
         .read_notification("textDocument/publishDiagnostics")
         .await;
-    assert!(
-        notification["params"]["diagnostics"]
-            .as_array()
-            .unwrap()
-            .is_empty()
-    );
+    assert!(notification["params"]["diagnostics"]
+        .as_array()
+        .unwrap()
+        .is_empty());
     server.shutdown().await;
 }
 
@@ -813,7 +862,10 @@ async fn did_change_updates_diagnostics() {
     let first = server
         .read_notification("textDocument/publishDiagnostics")
         .await;
-    assert!(!first["params"]["diagnostics"].as_array().unwrap().is_empty());
+    assert!(!first["params"]["diagnostics"]
+        .as_array()
+        .unwrap()
+        .is_empty());
 
     server
         .send(json!({
@@ -829,11 +881,9 @@ async fn did_change_updates_diagnostics() {
     let second = server
         .read_notification("textDocument/publishDiagnostics")
         .await;
-    assert!(
-        second["params"]["diagnostics"]
-            .as_array()
-            .unwrap()
-            .is_empty()
-    );
+    assert!(second["params"]["diagnostics"]
+        .as_array()
+        .unwrap()
+        .is_empty());
     server.shutdown().await;
 }
