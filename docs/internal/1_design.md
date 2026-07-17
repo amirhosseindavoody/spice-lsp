@@ -64,7 +64,7 @@ Capabilities that are not yet shipped, in rough priority:
 |-------|-------|
 | Completion | Element/directive suggestions; reuse reference corpus for docs |
 | Connectivity | Dangling-node and floating-net diagnostics — [Dialect reference and net semantics](../8_dialect-reference-and-semantics.md) |
-| Large-file / extracted mode | Size-gated defs-only analysis for 100+ MB netlists — [Large-file / extracted mode](3_large-file-extracted-mode.md) |
+| Large-file / extracted mode | Size-gated defs-only analysis shipped (`spiceLsp.analysisMode`); lazy includes / incremental parse still open — [Large-file / extracted mode](3_large-file-extracted-mode.md) |
 | Deeper dialect grammar | LTspice / HSPICE parse quirks beyond the shared grammar |
 
 Shipped behavior is documented in [Architecture](../4_architecture.md) and [LSP features](../5_lsp-features.md). Multi-dialect selection and corpus authoring: [Multi-dialect support](2_multi-dialect-design.md).

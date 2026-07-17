@@ -1,4 +1,6 @@
-use spice_parser::{DocumentSymbolEntry, IncludeResolution, Index, Span, SymbolKind};
+use spice_parser::{
+    model_ref_at_offset, DocumentSymbolEntry, IncludeResolution, Index, Span, SymbolKind,
+};
 use tower_lsp::lsp_types::{
     Diagnostic, DiagnosticSeverity, DocumentSymbol, Location, NumberOrString, Position, Range,
     SymbolKind as LspSymbolKind, Url,
@@ -89,15 +91,22 @@ pub fn definition_location_with_includes(
         }
     }
 
-    let symbol = index.symbol_at_offset(offset)?;
+    let (kind, name) = if let Some(symbol) = index.symbol_at_offset(offset) {
+        (symbol.kind, symbol.name.clone())
+    } else if let Some((model_name, _)) = model_ref_at_offset(source, offset) {
+        // Extracted mode omits per-instance model symbols; classify the line instead.
+        (SymbolKind::Model, model_name)
+    } else {
+        return None;
+    };
 
-    if let Some(span) = local_definition_span(index, symbol.kind, &symbol.name) {
+    if let Some(span) = local_definition_span(index, kind, &name) {
         return Some(location(uri, source, span));
     }
 
     if let Some(resolution) = resolution {
-        if matches!(symbol.kind, SymbolKind::Model | SymbolKind::Subckt) {
-            if let Some((file, _, span)) = resolution.find_model_or_subckt(&symbol.name) {
+        if matches!(kind, SymbolKind::Model | SymbolKind::Subckt) {
+            if let Some((file, _, span)) = resolution.find_model_or_subckt(&name) {
                 let file_uri = path_to_url(&file.path)?;
                 return Some(location(&file_uri, &file.text, span));
             }
@@ -105,7 +114,7 @@ pub fn definition_location_with_includes(
     }
 
     // Fallback: previous same-file behavior (reference span).
-    let span = resolve_definition_span(index, symbol.kind, &symbol.name)?;
+    let span = resolve_definition_span(index, kind, &name)?;
     Some(location(uri, source, span))
 }
 
@@ -254,6 +263,36 @@ mod tests {
     }
 
     #[test]
+    fn extracted_mode_goto_model_via_line_classify() {
+        let source = "\
+.subckt buf in out
+X1 a b buf
+.ends
+";
+        let result = spice_parser::analyze_with_profile(
+            source,
+            spice_parser::Dialect::Hspice,
+            spice_parser::AnalysisProfile::Extracted,
+        );
+        assert!(result
+            .index
+            .symbols
+            .iter()
+            .all(|s| s.kind != SymbolKind::Instance));
+        let uri = Url::parse("file:///test/extracted.cir").unwrap();
+        let offset = source.rfind("buf").expect("instance model ref");
+        let loc = definition_location_with_includes(
+            &uri,
+            source,
+            &result.index,
+            offset,
+            None,
+        )
+        .expect("definition from extracted instance model ref");
+        assert_eq!(loc.range.start.line, 0);
+    }
+
+    #[test]
     fn definition_jumps_into_include_file() {
         let dir =
             PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../test-data/valid/with-include");
@@ -263,6 +302,7 @@ mod tests {
             library_paths: Vec::new(),
             max_depth: 8,
             dialect: spice_parser::Dialect::Hspice,
+            ..Default::default()
         };
         let loader = spice_parser::disk_loader_with_overrides(Default::default());
         let (result, resolution) = spice_parser::analyze_with_includes(&source, &options, &loader);
@@ -292,6 +332,7 @@ mod tests {
             library_paths: Vec::new(),
             max_depth: 8,
             dialect: spice_parser::Dialect::Hspice,
+            ..Default::default()
         };
         let loader = spice_parser::disk_loader_with_overrides(Default::default());
         let (result, resolution) = spice_parser::analyze_with_includes(&source, &options, &loader);
@@ -343,6 +384,7 @@ mod tests {
             library_paths: Vec::new(),
             max_depth: 8,
             dialect: spice_parser::Dialect::Hspice,
+            ..Default::default()
         };
         let loader = spice_parser::disk_loader_with_overrides(Default::default());
         let (result, resolution) = spice_parser::analyze_with_includes(&source, &options, &loader);

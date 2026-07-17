@@ -94,10 +94,41 @@ impl Index {
             .or_default()
             .push(span);
     }
+
+    /// Record at most one reference span per `(kind, name)` (extracted-mode memory bound).
+    pub(crate) fn add_reference_first(&mut self, kind: SymbolKind, name: String, span: Span) {
+        let key = (kind, name.to_ascii_lowercase());
+        self.references.entry(key).or_insert_with(|| vec![span]);
+    }
+
+    /// Unique model names referenced from instances, with a representative span.
+    pub fn model_reference_sites(&self) -> impl Iterator<Item = (&str, Span)> + '_ {
+        self.references.iter().filter_map(|((kind, name), spans)| {
+            if *kind == SymbolKind::Model {
+                spans.first().map(|span| (name.as_str(), *span))
+            } else {
+                None
+            }
+        })
+    }
 }
 
-/// Build symbol index and semantic diagnostics from line-oriented CST nodes.
-pub fn build_index(_source: &str, lines: &[(Span, LineKind)]) -> (Index, Vec<Diagnostic>) {
+/// Build symbol index and semantic diagnostics (full profile).
+pub fn build_index(source: &str, lines: &[(Span, LineKind)]) -> (Index, Vec<Diagnostic>) {
+    build_index_with_profile(source, lines, crate::AnalysisProfile::Full)
+}
+
+/// Build symbol index under `profile`.
+///
+/// [`crate::AnalysisProfile::Extracted`] skips per-instance symbols, outline children,
+/// and duplicate-name scans. Model/subckt names from instances are recorded as sparse
+/// references (first span only) for unknown-model diagnostics.
+pub fn build_index_with_profile(
+    _source: &str,
+    lines: &[(Span, LineKind)],
+    profile: crate::AnalysisProfile,
+) -> (Index, Vec<Diagnostic>) {
+    let extracted = matches!(profile, crate::AnalysisProfile::Extracted);
     let mut index = Index::default();
     let mut diagnostics = Vec::new();
     let mut scope_stack: Vec<(String, Span)> = Vec::new();
@@ -190,44 +221,60 @@ pub fn build_index(_source: &str, lines: &[(Span, LineKind)]) -> (Index, Vec<Dia
                 model_ref,
             } => {
                 let scope = current_scope(&scope_stack);
-                let key = (scope.clone(), name.to_ascii_lowercase());
-                instance_counts
-                    .entry(key)
-                    .or_insert_with(|| (name.clone(), Vec::new()))
-                    .1
-                    .push(*name_span);
 
-                index.symbols.push(Symbol {
-                    kind: SymbolKind::Instance,
-                    name: name.clone(),
-                    name_span: *name_span,
-                    line_span: *line_span,
-                    scope: scope.clone(),
-                });
+                if extracted {
+                    if let Some((model_name, model_span)) = model_ref {
+                        // Sparse refs: one span per unique name keeps memory bounded.
+                        index.add_reference_first(
+                            SymbolKind::Subckt,
+                            model_name.clone(),
+                            *model_span,
+                        );
+                        index.add_reference_first(
+                            SymbolKind::Model,
+                            model_name.clone(),
+                            *model_span,
+                        );
+                    }
+                } else {
+                    let key = (scope.clone(), name.to_ascii_lowercase());
+                    instance_counts
+                        .entry(key)
+                        .or_insert_with(|| (name.clone(), Vec::new()))
+                        .1
+                        .push(*name_span);
 
-                push_outline_child(
-                    &mut current_subckt,
-                    &mut index.document_symbols,
-                    DocumentSymbolEntry {
-                        name: name.clone(),
-                        kind: SymbolKind::Instance,
-                        name_span: *name_span,
-                        line_span: *line_span,
-                        children: Vec::new(),
-                    },
-                );
-
-                if let Some((model_name, model_span)) = model_ref {
-                    index.add_reference(SymbolKind::Subckt, model_name.clone(), *model_span);
-                    index.add_reference(SymbolKind::Model, model_name.clone(), *model_span);
                     index.symbols.push(Symbol {
-                        kind: SymbolKind::Model,
-                        name: model_name.clone(),
-                        name_span: *model_span,
+                        kind: SymbolKind::Instance,
+                        name: name.clone(),
+                        name_span: *name_span,
                         line_span: *line_span,
                         scope: scope.clone(),
                     });
-                    // Defer unknown-model until the full file (and includes) are indexed.
+
+                    push_outline_child(
+                        &mut current_subckt,
+                        &mut index.document_symbols,
+                        DocumentSymbolEntry {
+                            name: name.clone(),
+                            kind: SymbolKind::Instance,
+                            name_span: *name_span,
+                            line_span: *line_span,
+                            children: Vec::new(),
+                        },
+                    );
+
+                    if let Some((model_name, model_span)) = model_ref {
+                        index.add_reference(SymbolKind::Subckt, model_name.clone(), *model_span);
+                        index.add_reference(SymbolKind::Model, model_name.clone(), *model_span);
+                        index.symbols.push(Symbol {
+                            kind: SymbolKind::Model,
+                            name: model_name.clone(),
+                            name_span: *model_span,
+                            line_span: *line_span,
+                            scope: scope.clone(),
+                        });
+                    }
                 }
             }
             LineKind::Include { .. }
@@ -253,17 +300,19 @@ pub fn build_index(_source: &str, lines: &[(Span, LineKind)]) -> (Index, Vec<Dia
         }
     }
 
-    for ((scope, _name), (display_name, spans)) in instance_counts {
-        if spans.len() > 1 {
-            for span in spans {
-                diagnostics.push(Diagnostic {
-                    message: format!("duplicate component name '{display_name}'"),
-                    severity: Severity::Warning,
-                    span,
-                    code: Some("spice/duplicate-name".into()),
-                });
+    if !extracted {
+        for ((scope, _name), (display_name, spans)) in instance_counts {
+            if spans.len() > 1 {
+                for span in spans {
+                    diagnostics.push(Diagnostic {
+                        message: format!("duplicate component name '{display_name}'"),
+                        severity: Severity::Warning,
+                        span,
+                        code: Some("spice/duplicate-name".into()),
+                    });
+                }
+                let _ = scope;
             }
-            let _ = scope;
         }
     }
 
@@ -274,16 +323,21 @@ pub fn build_index(_source: &str, lines: &[(Span, LineKind)]) -> (Index, Vec<Dia
 
 /// Emit `spice/unknown-model` for model/subckt references with no local definition.
 ///
+/// Prefer the references map (works for extracted-mode sparse refs and full mode).
 /// Callers that merge include/lib definitions should filter these afterward.
 pub fn unknown_model_diagnostics(index: &Index) -> Vec<Diagnostic> {
     let mut diagnostics = Vec::new();
     let mut seen = HashMap::<String, Span>::new();
 
+    for (name_lc, span) in index.model_reference_sites() {
+        seen.entry(name_lc.to_string()).or_insert(span);
+    }
+
+    // Full mode also stores model-ref symbols; cover any that lack a reference entry.
     for symbol in &index.symbols {
         if symbol.kind != SymbolKind::Model {
             continue;
         }
-        // Model-kind symbols that are also definitions are not references.
         if index
             .definition_span(SymbolKind::Model, &symbol.name)
             .is_some_and(|span| span == symbol.name_span)
@@ -298,15 +352,14 @@ pub fn unknown_model_diagnostics(index: &Index) -> Vec<Diagnostic> {
         let display = index
             .symbols
             .iter()
-            .find(|s| s.kind == SymbolKind::Model && s.name.eq_ignore_ascii_case(&name_lc))
+            .find(|s| {
+                (s.kind == SymbolKind::Model || s.kind == SymbolKind::Subckt)
+                    && s.name.eq_ignore_ascii_case(&name_lc)
+            })
             .map(|s| s.name.clone())
             .unwrap_or(name_lc.clone());
 
-        if index.definition_span(SymbolKind::Model, &display).is_none()
-            && index
-                .definition_span(SymbolKind::Subckt, &display)
-                .is_none()
-        {
+        if !index.has_model_or_subckt(&display) {
             diagnostics.push(Diagnostic {
                 message: format!("'{display}' is not defined as a model or subcircuit"),
                 severity: Severity::Warning,
@@ -317,6 +370,32 @@ pub fn unknown_model_diagnostics(index: &Index) -> Vec<Diagnostic> {
     }
 
     diagnostics
+}
+
+/// Byte span of the source line containing `offset` (including the trailing newline if present).
+pub fn line_span_containing(source: &str, offset: usize) -> Option<Span> {
+    if source.is_empty() {
+        return None;
+    }
+    let offset = offset.min(source.len());
+    let start = source[..offset].rfind('\n').map(|i| i + 1).unwrap_or(0);
+    let end = source[offset..]
+        .find('\n')
+        .map(|i| offset + i + 1)
+        .unwrap_or(source.len());
+    Some(Span { start, end })
+}
+
+/// Model/subckt token under `offset` on an instance line (extracted-mode goto fallback).
+pub fn model_ref_at_offset(source: &str, offset: usize) -> Option<(String, Span)> {
+    let line_span = line_span_containing(source, offset)?;
+    match classify_line(source, line_span) {
+        LineKind::Instance {
+            model_ref: Some((name, span)),
+            ..
+        } if offset >= span.start && offset <= span.end => Some((name, span)),
+        _ => None,
+    }
 }
 
 fn current_scope(scope_stack: &[(String, Span)]) -> String {
@@ -675,5 +754,30 @@ mod tests {
             parsed[1].1,
             LineKind::Instance { ref name, .. } if name == "X1"
         ));
+    }
+
+    #[test]
+    fn model_ref_at_offset_finds_x_instance_model() {
+        let source = "X1 a b mybuf\n";
+        let offset = source.find("mybuf").unwrap();
+        let (name, span) = model_ref_at_offset(source, offset).expect("model ref");
+        assert_eq!(name, "mybuf");
+        assert_eq!(&source[span.start..span.end], "mybuf");
+    }
+
+    #[test]
+    fn extracted_index_keeps_defs_only() {
+        let source = ".subckt buf in out\nX1 a b buf\nX2 a b buf\n.ends\n";
+        let parsed = lines(source);
+        let (index, diags) =
+            build_index_with_profile(source, &parsed, crate::AnalysisProfile::Extracted);
+        assert!(index.has_definition(SymbolKind::Subckt, "buf"));
+        assert_eq!(
+            index.symbols.iter().filter(|s| s.kind == SymbolKind::Instance).count(),
+            0
+        );
+        assert!(diags
+            .iter()
+            .all(|d| d.code.as_deref() != Some("spice/duplicate-name")));
     }
 }

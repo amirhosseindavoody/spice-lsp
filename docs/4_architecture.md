@@ -141,6 +141,8 @@ See [VS Code integration](development/3_vscode-integration.md).
 | Reference hover lookup | < 1 ms (in-memory index) |
 | Incremental edit | Re-parse changed regions only |
 
+Buffers at or above `spiceLsp.extractedByteThreshold` (default 16 MiB) use **extracted** analysis: definitions-only indexing without per-instance symbols. See [LSP features](5_lsp-features.md) and [Large-file / extracted mode](internal/3_large-file-extracted-mode.md).
+
 ## Related reading
 
 - [Dialect reference and net semantics](8_dialect-reference-and-semantics.md)

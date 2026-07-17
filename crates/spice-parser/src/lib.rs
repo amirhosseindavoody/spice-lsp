@@ -6,11 +6,13 @@ mod dialect;
 mod format;
 mod hover_token;
 pub mod includes;
+mod profile;
 mod subckt;
 mod symbols;
 
 pub use analyze::{
-    analyze, analyze_lines, analyze_with_dialect, collect_classified_lines, ParseResult,
+    analyze, analyze_for_mode, analyze_lines, analyze_lines_with_profile, analyze_with_dialect,
+    analyze_with_profile, collect_classified_lines, ParseResult,
 };
 pub use diagnostic::{Diagnostic, Severity, Span};
 pub use dialect::{Dialect, DialectProfile};
@@ -21,7 +23,11 @@ pub use includes::{
     find_lib_section_span, resolve_include_path, resolve_includes, IncludeRef, IncludeResolution,
     IncludedFile, ResolveOptions, ResolvedInclude, DEFAULT_MAX_INCLUDE_DEPTH,
 };
+pub use profile::{
+    resolve_profile, AnalysisMode, AnalysisProfile, DEFAULT_EXTRACTED_BYTE_THRESHOLD,
+};
 pub use symbols::{
-    build_index, classify_line, unknown_model_diagnostics, DocumentSymbolEntry, Index, LineKind,
-    Symbol, SymbolKind,
+    build_index, build_index_with_profile, classify_line, line_span_containing,
+    model_ref_at_offset, unknown_model_diagnostics, DocumentSymbolEntry, Index, LineKind, Symbol,
+    SymbolKind,
 };

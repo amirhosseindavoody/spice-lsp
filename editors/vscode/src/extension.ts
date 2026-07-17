@@ -167,6 +167,9 @@ function createClient(): LanguageClient {
   const dialect = currentDialectId();
   const libraryPaths = config.get<string[]>("libraryPaths") ?? [];
   const maxDepth = config.get<number>("include.maxDepth") ?? 16;
+  const analysisMode = config.get<string>("analysisMode") ?? "auto";
+  const extractedByteThreshold =
+    config.get<number>("extractedByteThreshold") ?? 16777216;
   log(`Starting language server: ${serverPath} (dialect=${dialect})`);
 
   const serverOptions: ServerOptions = {
@@ -187,6 +190,8 @@ function createClient(): LanguageClient {
       dialect,
       libraryPaths,
       include: { maxDepth },
+      analysisMode,
+      extractedByteThreshold,
     },
     outputChannel: output,
   };
@@ -485,7 +490,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         event.affectsConfiguration("spiceLsp.trace.server") ||
         event.affectsConfiguration("spiceLsp.dialect") ||
         event.affectsConfiguration("spiceLsp.libraryPaths") ||
-        event.affectsConfiguration("spiceLsp.include.maxDepth")
+        event.affectsConfiguration("spiceLsp.include.maxDepth") ||
+        event.affectsConfiguration("spiceLsp.analysisMode") ||
+        event.affectsConfiguration("spiceLsp.extractedByteThreshold")
       ) {
         try {
           await restartClient();

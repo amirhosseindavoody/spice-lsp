@@ -50,6 +50,8 @@ Other platforms (or older Linux glibc) need a `spice-lsp` binary on your `PATH`,
 | `spiceLsp.dialect` | Active dialect: `hspice` (default), `ngspice`, or `ltspice` |
 | `spiceLsp.libraryPaths` | Extra directories for resolving `.include` / `.lib` paths |
 | `spiceLsp.include.maxDepth` | Max nesting depth for include/lib chains (default `16`) |
+| `spiceLsp.analysisMode` | `auto` (default), `full`, or `extracted` — defs-only analysis for large netlists |
+| `spiceLsp.extractedByteThreshold` | Byte size for `auto` → extracted (default `16777216` / 16 MiB) |
 | `spiceLsp.serverPath` | Override the bundled language-server binary with a custom path |
 | `spiceLsp.trace.server` | Trace LSP communication: `off`, `messages`, or `verbose` |
 
