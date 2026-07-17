@@ -31,3 +31,4 @@
 
 - [Design](internal/1_design.md)
 - [Multi-dialect support](internal/2_multi-dialect-design.md)
+- [Large-file / extracted mode](internal/3_large-file-extracted-mode.md)

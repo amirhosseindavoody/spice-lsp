@@ -64,6 +64,7 @@ Parsing is still largely Ngspice-oriented; reference namespaces already switch w
 
 - Error recovery may leave incomplete indexes until syntax is fixed
 - Very large files still re-parse the full buffer after the debounce window
+- Extracted / post-layout netlists (tens to hundreds of MB) are outside the current full-index design; a size-gated defs-only mode is proposed in [Large-file / extracted mode](internal/3_large-file-extracted-mode.md)
 - LSP assumes UTF-8 source
 
 ## Editor / LSP
