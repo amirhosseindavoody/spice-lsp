@@ -2,7 +2,7 @@
   "name": "spice-lsp",
   "displayName": "SPICE Language Support",
   "description": "Language support for SPICE circuit simulation netlists — syntax diagnostics, outline, go to definition, and find references.",
-  "version": "0.2.19",
+  "version": "0.2.20",
   "publisher": "AmirhosseinDavoody",
   "license": "MIT",
   "repository": {
