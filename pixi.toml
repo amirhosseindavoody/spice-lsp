@@ -13,6 +13,7 @@ build-dev = "cargo build -p spice-lsp"
 test = "cargo test --workspace"
 spice-lsp = "cargo run -p spice-lsp"
 fmt = "cargo fmt --all"
+format-spice = "cargo run -q -p spice-lsp -- format"
 clippy = "cargo clippy --workspace -- -D warnings"
 grammar-generate = { cwd = "tree-sitter-spice", cmd = "npx --yes tree-sitter-cli@0.24 generate" }
 ext-install = { cwd = "editors/vscode", cmd = "npm install" }

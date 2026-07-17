@@ -35,7 +35,8 @@ Add these to `[tasks]` in `pixi.toml` as the workspace grows:
 | `test-parser` | `cargo test -p spice-parser` | Parser fixtures only |
 | `test-lsp` | `cargo test -p spice-lsp` | LSP integration tests |
 | `spice-lsp` | `cargo run -p spice-lsp` | Run language server (stdio) |
-| `fmt` | `cargo fmt --all` | Rust formatting |
+| `format-spice` | `cargo run -q -p spice-lsp -- format` | Format SPICE netlists (`--write` / `--check`) |
+| `fmt` | `cargo fmt --all` | Rust source formatting |
 | `clippy` | `cargo clippy --workspace -- -D warnings` | Lint |
 | `mdbook-build` | `mdbook build docs` | Static doc site |
 | `mdbook-serve` | `mdbook serve docs -n 127.0.0.1 -p 3000` | Live doc preview |

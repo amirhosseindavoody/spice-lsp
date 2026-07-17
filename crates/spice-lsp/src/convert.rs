@@ -255,8 +255,8 @@ mod tests {
 
     #[test]
     fn definition_jumps_into_include_file() {
-        let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("../../test-data/valid/with-include");
+        let dir =
+            PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../test-data/valid/with-include");
         let source = std::fs::read_to_string(dir.join("top.cir")).unwrap();
         let options = spice_parser::ResolveOptions {
             base_dir: dir.clone(),
@@ -265,8 +265,7 @@ mod tests {
             dialect: spice_parser::Dialect::Hspice,
         };
         let loader = spice_parser::disk_loader_with_overrides(Default::default());
-        let (result, resolution) =
-            spice_parser::analyze_with_includes(&source, &options, &loader);
+        let (result, resolution) = spice_parser::analyze_with_includes(&source, &options, &loader);
 
         let uri = Url::from_file_path(dir.join("top.cir")).unwrap();
         // Cursor on `nch` in `M1 d g s b nch`
@@ -285,8 +284,8 @@ mod tests {
 
     #[test]
     fn definition_jumps_to_lib_path_and_entry() {
-        let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("../../test-data/valid/with-include");
+        let dir =
+            PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../test-data/valid/with-include");
         let source = std::fs::read_to_string(dir.join("top-lib.cir")).unwrap();
         let options = spice_parser::ResolveOptions {
             base_dir: dir.clone(),
@@ -295,8 +294,7 @@ mod tests {
             dialect: spice_parser::Dialect::Hspice,
         };
         let loader = spice_parser::disk_loader_with_overrides(Default::default());
-        let (result, resolution) =
-            spice_parser::analyze_with_includes(&source, &options, &loader);
+        let (result, resolution) = spice_parser::analyze_with_includes(&source, &options, &loader);
 
         let uri = Url::from_file_path(dir.join("top-lib.cir")).unwrap();
 
@@ -337,8 +335,8 @@ mod tests {
 
     #[test]
     fn definition_jumps_to_include_path() {
-        let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("../../test-data/valid/with-include");
+        let dir =
+            PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../test-data/valid/with-include");
         let source = std::fs::read_to_string(dir.join("top.cir")).unwrap();
         let options = spice_parser::ResolveOptions {
             base_dir: dir.clone(),
@@ -347,8 +345,7 @@ mod tests {
             dialect: spice_parser::Dialect::Hspice,
         };
         let loader = spice_parser::disk_loader_with_overrides(Default::default());
-        let (result, resolution) =
-            spice_parser::analyze_with_includes(&source, &options, &loader);
+        let (result, resolution) = spice_parser::analyze_with_includes(&source, &options, &loader);
 
         let uri = Url::from_file_path(dir.join("top.cir")).unwrap();
         let offset = source.find("models.inc").expect("include path");

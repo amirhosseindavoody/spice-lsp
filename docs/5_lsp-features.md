@@ -17,8 +17,8 @@ LSP methods spice-lsp implements today, plus a short note on planned work.
 | `textDocument/definition` / `references` | Shipped |
 | `textDocument/hover` (dialect reference + file-local) | Shipped |
 | Dangling node / floating net diagnostics | Planned |
+| `textDocument/formatting` / `rangeFormatting` | Shipped |
 | `textDocument/completion` | Planned |
-| `textDocument/formatting` | Planned |
 | `textDocument/didSave` (re-lint) | Planned |
 
 Full specification of reference hover and net diagnostics: [Dialect reference and net semantics](8_dialect-reference-and-semantics.md).
@@ -36,7 +36,9 @@ Full specification of reference hover and net diagnostics: [Dialect reference an
     "documentSymbolProvider": true,
     "definitionProvider": true,
     "referencesProvider": true,
-    "hoverProvider": true
+    "hoverProvider": true,
+    "documentFormattingProvider": true,
+    "documentRangeFormattingProvider": true
   },
   "serverInfo": { "name": "spice-lsp", "version": "0.1.0" }
 }
@@ -97,15 +99,17 @@ Design: [Multi-dialect support](internal/2_multi-dialect-design.md).
 
 When the cursor is on a directive, option, element keyword, or documented expression form, the server loads the matching entry and returns markdown (summary, syntax, parameter table, examples). You maintain this corpus over time; the LSP indexes and renders it. Authoring guide: [Dialect reference and net semantics](8_dialect-reference-and-semantics.md#part-1--dialect-reference-library).
 
+## Formatting
+
+`textDocument/formatting` and `textDocument/rangeFormatting` return a full-document `TextEdit` when the buffer would change. Range formatting uses the same full-document pass so instance alignment groups stay consistent. LSP `tabSize` maps to continuation `indentWidth`; output always uses spaces.
+
+Rules, CLI (`spice-lsp format`), and options: [Formatter](6_formatter.md).
+
 ## Planned
 
 ### Completion
 
 Element letters, directive names, in-scope model and subcircuit names, snippet templates for `.tran` / `.subckt`. Documentation can attach the same reference entries used for hover.
-
-### Formatting
-
-Registers `documentFormattingProvider`. Formatter profiles may follow the active dialect. See [Formatter](6_formatter.md).
 
 ### Connectivity diagnostics
 

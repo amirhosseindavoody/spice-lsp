@@ -1,0 +1,6 @@
+* Subcircuit example
+.SUBCKT buffer in out
+R1 in out 1k
+.ENDS buffer
+X1 a b buffer
+.END

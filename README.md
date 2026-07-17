@@ -2,7 +2,7 @@
 
 Language server and formatter for [SPICE](https://en.wikipedia.org/wiki/SPICE) circuit simulation netlists.
 
-**Current status:** include/lib resolution for `.model` / `.subckt` via `.include` and `.lib`, multi-dialect hover (default HSPICE), syntax + semantic diagnostics, outline, go to definition, find references; VS Code extension with bundled binaries.
+**Current status:** document formatting (LSP + `spice-lsp format`), include/lib resolution for `.model` / `.subckt` via `.include` and `.lib`, multi-dialect hover (default HSPICE), syntax + semantic diagnostics, outline, go to definition, find references; VS Code extension with bundled binaries.
 
 ## VS Code extension
 
@@ -21,10 +21,11 @@ Marketplace publish is automated via GitHub Actions — see [VS Code integration
 Ship a **VS Code extension** that starts the `spice-lsp` binary over stdio and provides:
 
 - Real-time syntax + semantic diagnostics as you edit netlists (**shipped**)
-- Document outline, go to definition, and find references (**shipped** in v0.2)
-- Completion and formatting (v0.3–v0.4)
-- **Dialect-aware documentation on hover** — curated reference files you maintain per Ngspice / LTspice / HSPICE (v0.5)
-- **Connectivity warnings** — dangling nodes and floating nets highlighted before simulation (v0.5)
+- Document outline, go to definition, and find references (**shipped**)
+- Document formatting — columnar alignment and `+` continuations (**shipped**)
+- Completion (planned)
+- **Dialect-aware documentation on hover** — curated reference files you maintain per Ngspice / LTspice / HSPICE (**shipped**)
+- **Connectivity warnings** — dangling nodes and floating nets highlighted before simulation (planned)
 
 See [VS Code integration](docs/development/3_vscode-integration.md) and [Dialect reference and net semantics](docs/8_dialect-reference-and-semantics.md).
 
@@ -69,9 +70,10 @@ First-time setup (repository admin, after the first deploy):
 | Shipped | Still deferred |
 |---------|----------------|
 | Stdio LSP server (`initialize`, text sync, `publishDiagnostics`) | Floating-net / dangling-node analysis |
-| Tree-sitter parse (shared grammar; dialect profile) | Formatter and completion |
+| Tree-sitter parse (shared grammar; dialect profile) | Completion |
 | Syntax + semantic diagnostics | Deep LTspice / HSPICE grammar splits |
 | Document outline, go to definition, find references | Workspace-wide symbol search |
+| Document formatting (LSP + `spice-lsp format` CLI) | Dialect-specific formatter profiles |
 | `.include` / `.lib` model & subckt resolution | Cross-file find-references / net graph |
 | Dialect setting (default HSPICE) + curated hover corpus | Per-file dialect overrides |
 | VS Code extension (Marketplace, bundled binaries, highlighting) | Windows arm64 bundled binary |
@@ -83,6 +85,8 @@ First-time setup (repository admin, after the first deploy):
 | What you want to verify | How |
 |-------------------------|-----|
 | Parser on sample netlists | `pixi run test` (fixture tests in `crates/spice-parser`) |
+| Formatter goldens | `pixi run cargo test -p spice-parser --test format_golden` |
+| Format a netlist | `pixi run format-spice -- --write path/to/file.cir` |
 | LSP handshake and diagnostics | `pixi run test --package spice-lsp` (stdio integration test) |
 | Manual smoke test | Open a `.cir` file, run **SPICE LSP: Restart Server**, introduce a syntax error |
 | Extension in isolation | `cd editors/vscode && npm run compile && F5` (Extension Development Host) |

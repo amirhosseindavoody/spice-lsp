@@ -69,9 +69,9 @@ impl Index {
     }
 
     pub fn symbol_at_offset(&self, offset: usize) -> Option<&Symbol> {
-        self.symbols.iter().find(|s| {
-            offset >= s.name_span.start && offset <= s.name_span.end
-        })
+        self.symbols
+            .iter()
+            .find(|s| offset >= s.name_span.start && offset <= s.name_span.end)
     }
 
     /// All definition keys `(kind, lowercase name)` present in this index.
@@ -303,7 +303,9 @@ pub fn unknown_model_diagnostics(index: &Index) -> Vec<Diagnostic> {
             .unwrap_or(name_lc.clone());
 
         if index.definition_span(SymbolKind::Model, &display).is_none()
-            && index.definition_span(SymbolKind::Subckt, &display).is_none()
+            && index
+                .definition_span(SymbolKind::Subckt, &display)
+                .is_none()
         {
             diagnostics.push(Diagnostic {
                 message: format!("'{display}' is not defined as a model or subcircuit"),
@@ -339,17 +341,31 @@ fn push_outline_child(
 /// Parsed classification of a source line.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum LineKind {
-    Subckt { name: String, name_span: Span },
-    Ends { name: Option<String> },
-    Model { name: String, name_span: Span },
-    Param { name: String, name_span: Span },
+    Subckt {
+        name: String,
+        name_span: Span,
+    },
+    Ends {
+        name: Option<String>,
+    },
+    Model {
+        name: String,
+        name_span: Span,
+    },
+    Param {
+        name: String,
+        name_span: Span,
+    },
     Instance {
         name: String,
         name_span: Span,
         model_ref: Option<(String, Span)>,
     },
     /// `.include` / `.inc` path
-    Include { path: String, path_span: Span },
+    Include {
+        path: String,
+        path_span: Span,
+    },
     /// `.lib 'file' entry` — load a named section from a library file
     LibCall {
         path: String,
@@ -358,9 +374,14 @@ pub enum LineKind {
         entry_span: Span,
     },
     /// `.lib entry` section header inside a library file
-    LibSection { name: String, name_span: Span },
+    LibSection {
+        name: String,
+        name_span: Span,
+    },
     /// `.endl` / `.endl entry`
-    Endl { name: Option<String> },
+    Endl {
+        name: Option<String>,
+    },
     Other,
 }
 
@@ -384,9 +405,8 @@ fn classify_directive(source: &str, line_span: Span, text: &str) -> LineKind {
     match directive.as_str() {
         "subckt" => {
             let name = parts.next().unwrap_or("").to_string();
-            name_line_kind(source, line_span, text, &name, |name, name_span| LineKind::Subckt {
-                name,
-                name_span,
+            name_line_kind(source, line_span, text, &name, |name, name_span| {
+                LineKind::Subckt { name, name_span }
             })
         }
         "ends" => {
@@ -395,17 +415,15 @@ fn classify_directive(source: &str, line_span: Span, text: &str) -> LineKind {
         }
         "model" => {
             let name = parts.next().unwrap_or("").to_string();
-            name_line_kind(source, line_span, text, &name, |name, name_span| LineKind::Model {
-                name,
-                name_span,
+            name_line_kind(source, line_span, text, &name, |name, name_span| {
+                LineKind::Model { name, name_span }
             })
         }
         "param" => {
             let raw = parts.next().unwrap_or("");
             let name = raw.split('=').next().unwrap_or(raw).to_string();
-            name_line_kind(source, line_span, text, &name, |name, name_span| LineKind::Param {
-                name,
-                name_span,
+            name_line_kind(source, line_span, text, &name, |name, name_span| {
+                LineKind::Param { name, name_span }
             })
         }
         "include" | "inc" => classify_include(source, line_span, text, &mut parts),
@@ -544,11 +562,13 @@ fn classify_instance(source: &str, line_span: Span, text: &str) -> LineKind {
         return LineKind::Other;
     }
 
-    let name_end = first
-        .len_utf8()
+    let name_end = first.len_utf8()
         + text[first.len_utf8()..]
             .chars()
-            .take_while(|c| c.is_ascii_alphanumeric() || matches!(c, '_' | '.' | '$' | ':' | '#' | '[' | ']' | '<' | '>' | '-'))
+            .take_while(|c| {
+                c.is_ascii_alphanumeric()
+                    || matches!(c, '_' | '.' | '$' | ':' | '#' | '[' | ']' | '<' | '>' | '-')
+            })
             .map(|c| c.len_utf8())
             .sum::<usize>();
 
@@ -567,7 +587,10 @@ fn classify_instance(source: &str, line_span: Span, text: &str) -> LineKind {
             if model_name.contains('=') {
                 None
             } else {
-                Some((model_name.to_string(), subspan(source, line_span, text, model_name)))
+                Some((
+                    model_name.to_string(),
+                    subspan(source, line_span, text, model_name),
+                ))
             }
         }
         'M' if tokens.len() >= 6 => Some((
@@ -615,9 +638,7 @@ mod tests {
 
     fn lines(source: &str) -> Vec<(Span, LineKind)> {
         let mut parser = Parser::new();
-        parser
-            .set_language(&tree_sitter_spice::language())
-            .unwrap();
+        parser.set_language(&tree_sitter_spice::language()).unwrap();
         let tree = parser.parse(source, None).unwrap();
         let mut out = Vec::new();
         collect_lines(source, tree.root_node(), &mut out);

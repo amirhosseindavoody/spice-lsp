@@ -5,8 +5,8 @@ use std::time::Duration;
 
 use serde_json::Value;
 use spice_parser::{
-    analyze_with_includes, disk_loader_with_overrides, hover_token_at, Dialect, IncludeResolution,
-    Index, ResolveOptions, DEFAULT_MAX_INCLUDE_DEPTH,
+    analyze_with_includes, disk_loader_with_overrides, format_source, hover_token_at, Dialect,
+    FormatOptions, IncludeResolution, Index, ResolveOptions, DEFAULT_MAX_INCLUDE_DEPTH,
 };
 use spice_reference::ReferenceIndex;
 use tokio::sync::RwLock;
@@ -312,8 +312,7 @@ impl Backend {
     async fn ensure_index_current(&self, uri: &Url) {
         let snapshot = {
             let docs = self.documents.read().await;
-            docs.get(uri)
-                .map(|doc| (doc.text.clone(), doc.version))
+            docs.get(uri).map(|doc| (doc.text.clone(), doc.version))
         };
         let Some((text, version)) = snapshot else {
             return;
@@ -369,6 +368,8 @@ impl LanguageServer for Backend {
                 definition_provider: Some(OneOf::Left(true)),
                 references_provider: Some(OneOf::Left(true)),
                 hover_provider: Some(HoverProviderCapability::Simple(true)),
+                document_formatting_provider: Some(OneOf::Left(true)),
+                document_range_formatting_provider: Some(OneOf::Left(true)),
                 ..Default::default()
             },
             server_info: Some(ServerInfo {
@@ -507,10 +508,8 @@ impl LanguageServer for Backend {
             return Ok(None);
         };
 
-        let offset = position_to_byte_offset(
-            &doc.text,
-            params.text_document_position_params.position,
-        );
+        let offset =
+            position_to_byte_offset(&doc.text, params.text_document_position_params.position);
         let location = definition_location_with_includes(
             uri,
             &doc.text,
@@ -597,6 +596,67 @@ impl LanguageServer for Backend {
 
         Ok(None)
     }
+
+    async fn formatting(&self, params: DocumentFormattingParams) -> Result<Option<Vec<TextEdit>>> {
+        let uri = &params.text_document.uri;
+        let docs = self.documents.read().await;
+        let Some(doc) = docs.get(uri) else {
+            return Ok(None);
+        };
+
+        let options = format_options_from_lsp(&params.options);
+        let formatted = format_source(&doc.text, &options);
+        if formatted == doc.text {
+            return Ok(Some(Vec::new()));
+        }
+
+        Ok(Some(vec![full_document_edit(&doc.text, formatted)]))
+    }
+
+    async fn range_formatting(
+        &self,
+        params: DocumentRangeFormattingParams,
+    ) -> Result<Option<Vec<TextEdit>>> {
+        // Range formatting expands to the full document so alignment groups stay consistent.
+        let _ = params.range;
+        self.formatting(DocumentFormattingParams {
+            text_document: params.text_document,
+            options: params.options,
+            work_done_progress_params: params.work_done_progress_params,
+        })
+        .await
+    }
+}
+
+fn format_options_from_lsp(options: &FormattingOptions) -> FormatOptions {
+    let mut opts = FormatOptions::default();
+    if options.tab_size > 0 {
+        opts.indent_width = options.tab_size as usize;
+    }
+    // SPICE formatting always uses spaces; `insertSpaces` is ignored.
+    let _ = options.insert_spaces;
+    opts
+}
+
+fn full_document_edit(original: &str, formatted: String) -> TextEdit {
+    let end = byte_offset_to_position_end(original);
+    TextEdit {
+        range: Range {
+            start: Position::new(0, 0),
+            end,
+        },
+        new_text: formatted,
+    }
+}
+
+fn byte_offset_to_position_end(source: &str) -> Position {
+    let line = source.matches('\n').count() as u32;
+    let line_start = source.rfind('\n').map(|i| i + 1).unwrap_or(0);
+    let character = source[line_start..]
+        .chars()
+        .map(|c| c.len_utf16())
+        .sum::<usize>() as u32;
+    Position { line, character }
 }
 
 fn file_local_hover(source: &str, symbol: &spice_parser::Symbol) -> Option<String> {
@@ -705,8 +765,8 @@ mod tests {
 
     #[test]
     fn include_fixture_has_no_unknown_model() {
-        let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("../../test-data/valid/with-include");
+        let dir =
+            PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../test-data/valid/with-include");
         let source = std::fs::read_to_string(dir.join("top.cir")).unwrap();
         let options = ResolveOptions {
             base_dir: dir,

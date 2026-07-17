@@ -37,13 +37,20 @@ pixi run build
 pixi run test
 ```
 
+Format a netlist from the CLI:
+
+```bash
+pixi run format-spice -- test-data/valid/simple-rc.cir
+pixi run format-spice -- --check test-data/valid/simple-rc.cir
+```
+
 Run the language server directly (it communicates over stdio — it will appear to hang; that is normal):
 
 ```bash
 pixi run spice-lsp
 ```
 
-Press Ctrl+C to stop.
+Press Ctrl+C to stop. In an editor, use **Format Document** once the LSP is connected.
 
 ## Open sample netlists
 
