@@ -48,6 +48,8 @@ Run the language server directly (it communicates over stdio — it will appear 
 
 ```bash
 pixi run spice-lsp
+# Equivalent; accepted because vscode-languageclient passes --stdio:
+pixi run cargo run -p spice-lsp -- --stdio
 ```
 
 Press Ctrl+C to stop. In an editor, use **Format Document** once the LSP is connected.

@@ -34,7 +34,7 @@ Add these to `[tasks]` in `pixi.toml` as the workspace grows:
 | `test` | `cargo test --workspace` | All unit + integration tests |
 | `test-parser` | `cargo test -p spice-parser` | Parser fixtures only |
 | `test-lsp` | `cargo test -p spice-lsp` | LSP integration tests |
-| `spice-lsp` | `cargo run -p spice-lsp` | Run language server (stdio) |
+| `spice-lsp` | `cargo run -p spice-lsp` | Run language server (stdio; also accepts `--stdio`) |
 | `format-spice` | `cargo run -q -p spice-lsp -- format` | Format SPICE netlists (`--write` / `--check`) |
 | `fmt` | `cargo fmt --all` | Rust source formatting |
 | `clippy` | `cargo clippy --workspace -- -D warnings` | Lint |

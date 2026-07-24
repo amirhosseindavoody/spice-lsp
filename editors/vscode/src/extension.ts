@@ -172,6 +172,7 @@ function createClient(): LanguageClient {
     config.get<number>("extractedByteThreshold") ?? 16777216;
   log(`Starting language server: ${serverPath} (dialect=${dialect})`);
 
+  // vscode-languageclient appends `--stdio` for TransportKind.stdio; the binary accepts it.
   const serverOptions: ServerOptions = {
     command: serverPath,
     args: [],
