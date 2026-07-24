@@ -17,7 +17,9 @@ struct LspProcess {
 impl LspProcess {
     async fn spawn() -> Self {
         let bin = env!("CARGO_BIN_EXE_spice-lsp");
+        // Match vscode-languageclient: TransportKind.stdio appends `--stdio`.
         let mut child = Command::new(bin)
+            .arg("--stdio")
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::null())
@@ -136,6 +138,25 @@ async fn handshake_with_dialect(server: &mut LspProcess, dialect: &str) {
     server
         .send(json!({"jsonrpc":"2.0","method":"initialized","params":{}}))
         .await;
+}
+
+#[test]
+fn cli_accepts_stdio_flag() {
+    let bin = env!("CARGO_BIN_EXE_spice-lsp");
+    let output = std::process::Command::new(bin)
+        .args(["--stdio", "--help"])
+        .output()
+        .expect("spice-lsp --stdio --help");
+    assert!(
+        output.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let help = String::from_utf8_lossy(&output.stdout);
+    assert!(
+        help.contains("--stdio"),
+        "expected --stdio in help text: {help}"
+    );
 }
 
 #[tokio::test]

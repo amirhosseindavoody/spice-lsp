@@ -1,6 +1,6 @@
 # Introduction
 
-**Last verified against:** size-gated extracted analysis mode (`spiceLsp.analysisMode` / `extractedByteThreshold`); document formatting (`textDocument/formatting` + `spice-lsp format`); go-to-definition on `.lib` / `.include`; include/lib resolution; multi-dialect hover (default HSPICE); completion and connectivity still planned
+**Last verified against:** LSP CLI accepts `--stdio` (vscode-languageclient); size-gated extracted analysis mode (`spiceLsp.analysisMode` / `extractedByteThreshold`); document formatting (`textDocument/formatting` + `spice-lsp format`); go-to-definition on `.lib` / `.include`; include/lib resolution; multi-dialect hover (default HSPICE); completion and connectivity still planned
 
 spice-lsp is a language server and VS Code extension for SPICE circuit netlists. It gives you editor feedback while you write `.cir`, `.sp`, `.spf`, `.inc`, `.lib`, and related files — without running a simulator.
 

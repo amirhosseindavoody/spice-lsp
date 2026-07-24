@@ -16,6 +16,10 @@ use tower_lsp::{LspService, Server};
     about = "Language server and formatter for SPICE netlists"
 )]
 struct Cli {
+    /// Communicate over stdio (default; accepted for LSP client compatibility)
+    #[arg(long, global = true)]
+    stdio: bool,
+
     #[command(subcommand)]
     command: Option<Commands>,
 }
@@ -38,8 +42,12 @@ enum Commands {
 
 #[tokio::main]
 async fn main() -> ExitCode {
-    let cli = Cli::parse();
-    match cli.command {
+    let Cli {
+        command,
+        stdio: _stdio,
+    } = Cli::parse();
+    // Transport is always stdio today; `_stdio` exists so clients may pass `--stdio`.
+    match command {
         None => {
             run_lsp().await;
             ExitCode::SUCCESS

@@ -61,8 +61,9 @@ Test the binary without an editor by driving stdio.
 Spawn `spice-lsp` as a child process, write JSON-RPC messages with Content-Length headers, read responses:
 
 ```rust
-// Pseudocode
+// Pseudocode — pass `--stdio` like vscode-languageclient does
 let mut child = Command::new("target/debug/spice-lsp")
+    .arg("--stdio")
     .stdin(Stdio::piped())
     .stdout(Stdio::piped())
     .spawn()?;
@@ -102,7 +103,7 @@ Some ecosystems ship an inspector; alternatively use the VS Code **Output → SP
 import json, subprocess, struct, sys
 
 proc = subprocess.Popen(
-    ["spice-lsp"],
+    ["spice-lsp", "--stdio"],
     stdin=subprocess.PIPE,
     stdout=subprocess.PIPE,
 )

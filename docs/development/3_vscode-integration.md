@@ -101,6 +101,8 @@ import {
 let client: LanguageClient | undefined;
 
 async function startClient(serverPath: string) {
+  // TransportKind.stdio makes the client append `--stdio` to the process args.
+  // spice-lsp accepts that flag (stdio is the only transport).
   const serverOptions: ServerOptions = {
     command: serverPath,
     args: [],
@@ -369,6 +371,7 @@ Pre-publish checklist:
 | Symptom | Likely cause | Fix |
 |---------|--------------|-----|
 | Server not starting | Binary not on PATH / wrong `serverPath` / unsupported platform | Set `spiceLsp.serverPath`, then **SPICE LSP: Restart Server**; check Output → SPICE Language Server |
+| `unexpected argument '--stdio'` / server exits code 2 | Bundled binary predates the `--stdio` CLI flag (needed by `TransportKind.stdio`) | Update the Marketplace extension, or build from source and set `spiceLsp.serverPath` |
 | `version 'GLIBC_2.3x' not found` | Host glibc older than the binary | Update to a Marketplace build linked for glibc 2.31+, or build locally and set `spiceLsp.serverPath` |
 | `spiceLsp.restartServer` / `spiceLsp.setDialect` / `spiceLsp.createDemoFolder` not found | Extension never activated, activate hung on LSP start, or Marketplace build predates the command (`setDialect` needs **≥ 0.2.10**; Create Demo Folder is newer) | Update the extension; reload the window; open a `.cir`/`.sp` file or run the command (auto-activates). Prefer builds that register commands before awaiting `client.start()` |
 | No **SPICE Language Server** in Output | Extension did not activate | Open a SPICE file or run **SPICE LSP: Restart Server** / **Set Dialect…**; check **Developer: Show Running Extensions** for activation errors |

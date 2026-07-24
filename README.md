@@ -41,7 +41,7 @@ cd spice-lsp
 pixi install
 pixi run build          # compile the LSP binary
 pixi run test           # unit and integration tests
-pixi run spice-lsp      # run the language server (stdio)
+pixi run spice-lsp      # run the language server (stdio; also accepts --stdio)
 ```
 
 Build the documentation site locally:
